@@ -1,4 +1,5 @@
 <?php
+require_once 'config/database.php';
 session_start();
 
 // Check if user is logged in
@@ -161,46 +162,45 @@ $currentYear = $_GET['year'] ?? date('Y');
                         <div class="legend-item">
                             <strong>Shift Codes:</strong>
                         </div>
-                        <div class="legend-item">
-                            <span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">M</span>
-                            <span>Morning</span>
-                        </div>
-                        <div class="legend-item">
-                            <span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">A</span>
-                            <span>Afternoon</span>
-                        </div>
-                        <div class="legend-item">
-                            <span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">N</span>
-                            <span>Night</span>
-                        </div>
-                        <div class="legend-item">
-                            <span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">F</span>
-                            <span>Flexible</span>
-                        </div>
+                        <?php 
+                        $sql_get_shift_schedules = "SELECT
+                            shift_sched_name,
+                            shift_sched_code
+                            FROM shift_schedules
+                            ORDER BY shift_sched_id ASC";
+
+                            $stmt = $pdo->prepare($sql_get_shift_schedules);
+                            $stmt->execute();
+                            $get_shift_schedules = $stmt->fetchAll();
+
+                            foreach ($get_shift_schedules as $shift_sched) {
+                                echo '<div class="legend-item">';
+                                echo '<span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">' . htmlspecialchars($shift_sched['shift_sched_code']) . '</span>';
+                                echo '<span>' . htmlspecialchars($shift_sched['shift_sched_name']) . '</span>';
+                                echo '</div>'; } ?>
                         
                         <div style="width: 100%; border-top: 1px solid var(--border-color); margin: 10px 0;"></div>
                         
                         <div class="legend-item">
                             <strong>Leave Codes:</strong>
                         </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">VL</span> = Vacation Leave
-                        </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">SL</span> = Sick Leave
-                        </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">EL</span> = Emergency Leave
-                        </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">BL</span> = Birthday Leave
-                        </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">STU</span> = Study Leave
-                        </div>
-                        <div class="legend-item">
-                            <span style="font-weight: 700;">NP</span> = No Pay Leave
-                        </div>
+
+                        <?php 
+                            $sql_get_leave_types = "SELECT
+                            leave_type_code,
+                            leave_type_name
+                            FROM leave_types
+                            ORDER BY leave_type_id ASC";
+                            
+                            $stmt = $pdo->prepare($sql_get_leave_types);
+                            $stmt->execute();
+                            $get_leave_types = $stmt->fetchAll();
+                            
+                            foreach ($get_leave_types as $leave_types) {
+                                echo '<div class="legend-item">';
+                                echo '<span style="font-weight: 700;">'. htmlspecialchars($leave_types['leave_type_code']) . " = " . htmlspecialchars($leave_types['leave_type_name']) . '</span>';
+                                echo '</div>'; } ?>
+                        
                     </div>
 
                     <div class="calendar-header">

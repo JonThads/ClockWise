@@ -470,7 +470,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($get_shift_schedules  as $shift_sched): ?>
+                            <?php foreach ($get_shift_schedules as $shift_sched): ?>
                             <tr>
                                 <td><?= $shift_sched['shift_sched_id'] ?></td>
                                 <td><?= htmlspecialchars($shift_sched['shift_sched_name']) ?></td>
