@@ -1,0 +1,1 @@
+v1.1.0 [FEATURE] Added Employees in Employee Management in Admin Dashboard, Added Shift Schedules and Leave Types at User Dashboard, CHANGELOG, LICENSE, README
