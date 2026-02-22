@@ -2,8 +2,8 @@
 require_once 'config/database.php';
 session_start();
 
-// Check if user is logged in and is admin
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
@@ -14,38 +14,82 @@ $messageType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get form data
-    $firstName = $_POST['first_name'] ?? '';
-    $lastName = $_POST['last_name'] ?? '';
-    $username = $_POST['username'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $email = $_POST['email'] ?? '';
+    $firstName  = $_POST['first_name'] ?? '';
+    $middleName = $_POST['middle_name'] ?? '';
+    $lastName   = $_POST['last_name'] ?? '';
+    $birthday = $_POST['birthday'] ?? '';
+    $username   = $_POST['username'] ?? '';
+    $password   = $_POST['password'] ?? '';
+    $email      = $_POST['email'] ?? '';
     $department = $_POST['department'] ?? '';
-    $workGroup = $_POST['work_group'] ?? '';
-    $shift = $_POST['shift'] ?? '';
-    $role = $_POST['role'] ?? 'employee';
-    
+    $workGroup  = $_POST['work_group'] ?? '';
+    $shift      = $_POST['shift'] ?? '';
+
+    // Auto-generate username: first initial + middle initial + last name + birth year
+    $birthYear = !empty($birthday) ? date('Y', strtotime($birthday)) : '';
+    $username = strtolower(substr($firstName, 0, 1) . substr($middleName, 0, 1) . $lastName . $birthYear);
+
     // Basic validation
-    if (empty($firstName) || empty($lastName) || empty($username) || empty($password)) {
+    if (empty($firstName) || empty($middleName) || empty($lastName) || empty($birthday) || empty($password)) {
         $message = 'Please fill in all required fields';
         $messageType = 'error';
     } else {
-        // In production, insert into database here
-        // $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        // INSERT INTO employees ...
-        
-        $message = 'Employee added successfully!';
-        $messageType = 'success';
-        
-        // Redirect back to admin dashboard after 2 seconds
-        header('refresh:2;url=admin-dashboard.php#employees');
+        try {
+            // Hash password
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+            // Insert into employees table
+            $sql = "INSERT INTO employees (
+                    emp_first_name,
+                    emp_middle_name,
+                    emp_last_name,
+                    emp_birthday,
+                    emp_email,
+                    emp_username,
+                    emp_password,
+                    dept_id,
+                    work_group_id,
+                    shift_sched_id,
+                    created_at) 
+                VALUES 
+                    (:first_name,
+                    :middle_name,
+                    :last_name,
+                    :birthday,
+                    :email,
+                    :username,
+                    :password,
+                    :department,
+                    :work_group,
+                    :shift,
+                    NOW())";
+
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([
+                ':first_name'  => $firstName,
+                ':middle_name' => $middleName,
+                ':last_name'   => $lastName,
+                ':birthday'    => $birthday,
+                ':email'       => $email,
+                ':username'    => $username,
+                ':password'    => $hashedPassword,
+                ':department'  => $department,
+                ':work_group'  => $workGroup,
+                ':shift'       => $shift
+            ]);
+
+            $message = 'Employee Added Successfully! Username: ' . $username;
+            $messageType = 'success';
+
+            // Redirect back to dashboard after 2 seconds
+            header('refresh:2;url=admin-dashboard.php#employees');
+        } catch (PDOException $e) {
+            $message = 'Error adding employee: ' . $e->getMessage();
+            $messageType = 'error';
+        }
     }
 }
 
-// Get departments and shifts for dropdowns (in production, fetch from database)
-$departments = ['IT', 'HR', 'Engineering', 'Accounting', 'Marketing', 'Operations'];
-$workGroups = ['Executive', 'Supervisor', 'Rank and File'];
-$shifts = ['Morning Shift', 'Afternoon Shift', 'Night Shift', 'Flexible'];
-$roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' => 'Supervisor', 'employee' => 'Employee'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -91,6 +135,11 @@ $roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' =
                                    value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>">
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Middle Name <span class="required">*</span></label>
+                            <input type="text" name="middle_name" class="form-input" required
+                                   value="<?= htmlspecialchars($_POST['middle_name'] ?? '') ?>">
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Last Name <span class="required">*</span></label>
                             <input type="text" name="last_name" class="form-input" required
                                    value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>">
@@ -112,10 +161,9 @@ $roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' =
                     
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Username <span class="required">*</span></label>
-                            <input type="text" name="username" class="form-input" required
-                                   value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                                   placeholder="Must be unique">
+                            <label class="form-label">Birthday <span class="required">*</span></label>
+                            <input type="date" name="birthday" class="form-input" required
+                                value="<?= htmlspecialchars($_POST['birthday'] ?? '') ?>">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Password <span class="required">*</span></label>
@@ -125,13 +173,27 @@ $roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' =
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Role <span class="required">*</span></label>
-                        <select name="role" class="form-select" required>
-                            <?php foreach ($roles as $value => $label): ?>
-                                <option value="<?= $value ?>" <?= ($_POST['role'] ?? 'employee') == $value ? 'selected' : '' ?>>
-                                    <?= $label ?>
+                        <label class="form-label">Work Group <span class="required">*</span></label>
+                        <select name="work_group" class="form-select" required>
+                            <option value="">Select Work Group</option>
+                            <?php
+                                $sql_get_work_groups = "SELECT
+                                    work_group_id,
+                                    work_group_name
+                                FROM work_groups
+                                ORDER BY work_group_id ASC";
+
+                                $stmt = $pdo->prepare($sql_get_work_groups);
+                                $stmt->execute();
+                                $get_work_groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                foreach ($get_work_groups as $work_groups): ?>
+                                <option value="<?= $work_groups['work_group_id'] ?>" <?= ($_POST['work_group'] ?? '') == $work_groups['work_group_id'] ? 'selected' : '' ?>>
+                                    <?= $work_groups['work_group_name'] ?>
                                 </option>
-                            <?php endforeach; ?>
+                            <?php
+                                endforeach;
+                            ?>
                         </select>
                         <small class="form-help">Determines access level and permissions</small>
                     </div>
@@ -146,22 +208,24 @@ $roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' =
                             <label class="form-label">Department <span class="required">*</span></label>
                             <select name="department" class="form-select" required>
                                 <option value="">Select Department</option>
-                                <?php foreach ($departments as $dept): ?>
-                                    <option value="<?= $dept ?>" <?= ($_POST['department'] ?? '') == $dept ? 'selected' : '' ?>>
-                                        <?= $dept ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Work Group <span class="required">*</span></label>
-                            <select name="work_group" class="form-select" required>
-                                <option value="">Select Work Group</option>
-                                <?php foreach ($workGroups as $group): ?>
-                                    <option value="<?= $group ?>" <?= ($_POST['work_group'] ?? '') == $group ? 'selected' : '' ?>>
-                                        <?= $group ?>
-                                    </option>
-                                <?php endforeach; ?>
+                            <?php
+                                $sql_get_departments = "SELECT
+                                    dept_id,
+                                    dept_name
+                                FROM departments
+                                ORDER BY dept_id ASC";
+
+                                $stmt = $pdo->prepare($sql_get_departments);
+                                $stmt->execute();
+                                $get_departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                foreach ($get_departments as $dept): ?>
+                                <option value="<?= $dept['dept_id'] ?>" <?= ($_POST['department'] ?? '') == $dept['dept_id'] ? 'selected' : '' ?>>
+                                    <?= $dept['dept_name'] ?>
+                                </option>
+                            <?php
+                                endforeach;
+                            ?>
                             </select>
                         </div>
                     </div>
@@ -170,11 +234,25 @@ $roles = ['admin' => 'Administrator', 'executive' => 'Executive', 'supervisor' =
                         <label class="form-label">Shift Schedule <span class="required">*</span></label>
                         <select name="shift" class="form-select" required>
                             <option value="">Select Shift</option>
-                            <?php foreach ($shifts as $shiftOption): ?>
-                                <option value="<?= $shiftOption ?>" <?= ($_POST['shift'] ?? '') == $shiftOption ? 'selected' : '' ?>>
-                                    <?= $shiftOption ?>
+                           <?php
+                                $sql_get_shift_schedules = "SELECT
+                                    shift_sched_id,
+                                    shift_sched_name,
+                                    shift_sched_code
+                                FROM shift_schedules
+                                ORDER BY shift_sched_id ASC";
+
+                                $stmt = $pdo->prepare($sql_get_shift_schedules);
+                                $stmt->execute();
+                                $get_shift_schedules = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                foreach ($get_shift_schedules as $shift): ?>
+                                <option value="<?= $shift['shift_sched_id'] ?>" <?= ($_POST['shift'] ?? '') == $shift['shift_sched_id'] ? 'selected' : '' ?>>
+                                    <?= $shift['shift_sched_code'] . " - " . $shift['shift_sched_name'] ?>
                                 </option>
-                            <?php endforeach; ?>
+                            <?php
+                                endforeach;
+                            ?>
                         </select>
                     </div>
                 </div>

@@ -6,7 +6,6 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
 
-
 // Check if user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: login.php');
@@ -229,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     e.created_at
                 FROM employees e
                 LEFT JOIN departments d ON e.dept_id = d.dept_id
-                LEFT JOIN work_groups wg ON e.work_group_id = wg.work_group_id
+                LEFT JOIN work_group_leaves wg ON e.work_group_id = wg.work_group_id
                 LEFT JOIN shift_schedules ss ON e.shift_sched_id = ss.shift_sched_id
                 ORDER BY e.emp_id ASC
                 ";
@@ -557,7 +556,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     SUM(CASE WHEN lt.leave_type_code = 'NoPay' THEN wg.leave_type_quantity ELSE 0 END) AS NoPay,
                     SUM(CASE WHEN lt.leave_type_code = 'EDU' THEN wg.leave_type_quantity ELSE 0 END) AS EDU
 
-                FROM work_groups wg
+                FROM work_group_leaves wg
                 JOIN leave_types lt 
                     ON wg.leave_type_id = lt.leave_type_id
 
