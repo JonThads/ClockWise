@@ -1,60 +1,68 @@
 <?php
-session_start();
+require_once 'config/database.php';
 
-// If already logged in, redirect to dashboard
-if (isset($_SESSION['user_id'])) {
-    if ($_SESSION['role'] === 'admin') {
-        header('Location: admin-dashboard.php');
-    } else {
-        header('Location: user-dashboard.php');
-    }
-    exit();
-}
-
-// Handle login form submission
 $error = '';
+$rememberedUser = $_COOKIE['remembered_user'] ?? '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
+    $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
     $remember = isset($_POST['remember']);
-    
-    // Sample credentials (replace with database check in production)
-    $validCredentials = [
-        'admin' => ['password' => 'admin123', 'role' => 'admin', 'name' => 'Admin User'],
-        'hradmin' => ['password' => 'hr123', 'role' => 'admin', 'name' => 'HR Administrator'],
-        'supervisor1' => ['password' => 'super123', 'role' => 'supervisor', 'name' => 'Maria Santos'],
-        'jlaguitao' => ['password' => 'user123', 'role' => 'employee', 'name' => 'Jon Thaddeus Laguitao'],
-        'employee1' => ['password' => 'emp123', 'role' => 'employee', 'name' => 'Employee One'],
-    ];
-    
-    if (isset($validCredentials[$username]) && $validCredentials[$username]['password'] === $password) {
-        // Set session
-        $_SESSION['user_id'] = $username;
-        $_SESSION['username'] = $username;
-        $_SESSION['name'] = $validCredentials[$username]['name'];
-        $_SESSION['role'] = $validCredentials[$username]['role'];
-        $_SESSION['login_time'] = time();
-        
-        // Remember me functionality
-        if ($remember) {
-            setcookie('remembered_user', $username, time() + (86400 * 30), '/'); // 30 days
+
+    if (!empty($username) && !empty($password)) {
+        try {
+            // Fetch user record (adjust table name if needed: roles vs user_roles)
+            $sql = "SELECT 
+                        e.emp_id,
+                        e.emp_username,
+                        e.emp_first_name,
+                        e.emp_password,
+                        ur.role_name
+                    FROM employees e
+                    JOIN user_roles ur ON e.role_id = ur.role_id
+                    WHERE e.emp_username = :username
+                    LIMIT 1";
+                    
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([':username' => $username]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($user && password_verify($password, $user['emp_password'])) {
+                // Set session
+                $_SESSION['user_id']    = $user['emp_id'];
+                $_SESSION['username']   = $user['emp_username'];
+                $_SESSION['name']       = $user['emp_first_name'];
+                $_SESSION['role']       = strtolower($user['role_name']); // e.g. "admin", "user"
+                $_SESSION['login_time'] = time();
+
+                // Remember me
+                if ($remember) {
+                    setcookie('remembered_user', $username, time() + (86400 * 30), '/');
+                }
+
+                // Redirect based on role
+                if ($_SESSION['role'] === 'admin') {
+                    header('Location: admin-dashboard.php');
+                } elseif ($_SESSION['role'] === 'user') {
+                    header('Location: user-dashboard.php');
+                } else {
+                    // fallback if role is unknown
+                    header('Location: dashboard.php');
+                }
+                exit();
+
+            } else {
+                $error = 'Invalid Username or Password';
+            }
+        } catch (PDOException $e) {
+            $error = 'Database Error: ' . $e->getMessage();
         }
-        
-        // Redirect based on role
-        if ($validCredentials[$username]['role'] === 'admin') {
-            header('Location: admin-dashboard.php');
-        } else {
-            header('Location: user-dashboard.php');
-        }
-        exit();
     } else {
-        $error = 'Invalid username or password';
+        $error = 'Please enter both Username and Password';
     }
 }
-
-// Get remembered username from cookie
-$rememberedUser = $_COOKIE['remembered_user'] ?? '';
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -149,8 +157,7 @@ $rememberedUser = $_COOKIE['remembered_user'] ?? '';
                 </form>
 
                 <div class="footer-text">
-                    <p>Test Credentials:<br>
-                    Admin: admin/admin123 | Employee: jlaguitao/user123</p>
+                    <p>"Kapag may alitaptap, tumingin sa mga ulap"<br>
                 </div>
             </div>
         </div>

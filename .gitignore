@@ -1,5 +1,6 @@
-#Ignore all SQL files
+#Ignore all SQL and TXT files
 *.sql
+*.txt
 
 #Ignore database.php
 database.php

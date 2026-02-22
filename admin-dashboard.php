@@ -1,6 +1,5 @@
 <?php
 require_once 'config/database.php';
-session_start();
 
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
@@ -61,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -228,7 +228,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     e.created_at
                 FROM employees e
                 LEFT JOIN departments d ON e.dept_id = d.dept_id
-                LEFT JOIN work_group_leaves wg ON e.work_group_id = wg.work_group_id
+                LEFT JOIN work_groups wg ON e.work_group_id = wg.work_group_id
                 LEFT JOIN shift_schedules ss ON e.shift_sched_id = ss.shift_sched_id
                 ORDER BY e.emp_id ASC
                 ";
@@ -259,21 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                                /* function generateUsername($firstName, $middleName, $lastName, $birthday) {
-                                    // First name initials (handles multiple first names)
-                                    $firstInitials = '';
-                                    foreach (explode(' ', trim($firstName)) as $name) {
-                                        $firstInitials .= strtolower($name[0]);
-                                    }
-
-                                    $middleInitial = $middleName ? strtolower($middleName[0]) : 'x';
-                                    $lastInitial   = strtolower($lastName[0]);
-                                    $birthYear     = date('Y', strtotime($birthday));
-
-                                    return $firstInitials . $middleInitial . $lastInitial . $birthYear;
-                                } */
-                            ?>
                             <?php foreach ($get_employees as $employees): ?>
                             <tr>
                                 <td><?= $employees['emp_id'] ?></td>

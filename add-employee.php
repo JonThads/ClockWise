@@ -1,6 +1,5 @@
 <?php
 require_once 'config/database.php';
-session_start();
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -23,6 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email      = $_POST['email'] ?? '';
     $department = $_POST['department'] ?? '';
     $workGroup  = $_POST['work_group'] ?? '';
+    $userRole   = $_POST['user_role'] ?? '';
     $shift      = $_POST['shift'] ?? '';
 
     // Auto-generate username: first initial + middle initial + last name + birth year
@@ -49,8 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     emp_password,
                     dept_id,
                     work_group_id,
+                    role_id,
                     shift_sched_id,
-                    created_at) 
+                    created_at)
                 VALUES 
                     (:first_name,
                     :middle_name,
@@ -61,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     :password,
                     :department,
                     :work_group,
+                    :user_role,
                     :shift,
                     NOW())";
 
@@ -75,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':password'    => $hashedPassword,
                 ':department'  => $department,
                 ':work_group'  => $workGroup,
+                ':user_role'   => $userRole,
                 ':shift'       => $shift
             ]);
 
@@ -82,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = 'success';
 
             // Redirect back to dashboard after 2 seconds
-            header('refresh:2;url=admin-dashboard.php#employees');
+            header('refresh:5;url=admin-dashboard.php#employees');
         } catch (PDOException $e) {
             $message = 'Error adding employee: ' . $e->getMessage();
             $messageType = 'error';
@@ -133,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <label class="form-label">First Name <span class="required">*</span></label>
                             <input type="text" name="first_name" class="form-input" required
                                    value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>">
+                            <small class="form-help">Username's are based on the initials of the employee's name</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Middle Name <span class="required">*</span></label>
@@ -171,31 +175,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                    placeholder="Minimum 8 characters">
                         </div>
                     </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Work Group <span class="required">*</span></label>
+                            <select name="work_group" class="form-select" required>
+                                <option value="">Select Work Group</option>
+                                <?php
+                                    $sql_get_work_groups = "SELECT
+                                        work_group_id,
+                                        work_group_name
+                                    FROM work_groups
+                                    ORDER BY work_group_id ASC";
 
-                    <div class="form-group">
-                        <label class="form-label">Work Group <span class="required">*</span></label>
-                        <select name="work_group" class="form-select" required>
-                            <option value="">Select Work Group</option>
-                            <?php
-                                $sql_get_work_groups = "SELECT
-                                    work_group_id,
-                                    work_group_name
-                                FROM work_groups
-                                ORDER BY work_group_id ASC";
+                                    $stmt = $pdo->prepare($sql_get_work_groups);
+                                    $stmt->execute();
+                                    $get_work_groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                                $stmt = $pdo->prepare($sql_get_work_groups);
-                                $stmt->execute();
-                                $get_work_groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                    foreach ($get_work_groups as $work_groups): ?>
+                                    <option value="<?= $work_groups['work_group_id'] ?>" <?= ($_POST['work_group'] ?? '') == $work_groups['work_group_id'] ? 'selected' : '' ?>>
+                                        <?= $work_groups['work_group_name'] ?>
+                                    </option>
+                                <?php
+                                    endforeach;
+                                ?>
+                            </select>
+                            <small class="form-help">Determines the Working Rank of the Employee</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Role <span class="required">*</span></label>
+                            <select name="user_role" class="form-select" required>
+                                <option value="">Select Role</option>
+                                <?php
+                                    $sql_get_roles = "SELECT
+                                        role_id,
+                                        role_name
+                                    FROM user_roles
+                                    ORDER BY role_id ASC";
 
-                                foreach ($get_work_groups as $work_groups): ?>
-                                <option value="<?= $work_groups['work_group_id'] ?>" <?= ($_POST['work_group'] ?? '') == $work_groups['work_group_id'] ? 'selected' : '' ?>>
-                                    <?= $work_groups['work_group_name'] ?>
-                                </option>
-                            <?php
-                                endforeach;
-                            ?>
-                        </select>
-                        <small class="form-help">Determines access level and permissions</small>
+                                    $stmt = $pdo->prepare($sql_get_roles);
+                                    $stmt->execute();
+                                    $get_roles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                                    foreach ($get_roles as $role): ?>
+                                    <option value="<?= $role['role_id'] ?>" <?= ($_POST['user_role'] ?? '') == $role['role_id'] ? 'selected' : '' ?>>
+                                        <?= $role['role_name'] ?>
+                                    </option>
+                                <?php
+                                    endforeach;
+                                ?>
+                            </select>
+                            <small class="form-help">Determines Access Level and Permissions</small>
+                        </div>
                     </div>
                 </div>
 
