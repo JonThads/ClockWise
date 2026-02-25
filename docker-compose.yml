@@ -1,0 +1,30 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_NAME: clockwise
+      DB_USER: root
+      DB_PASSWORD: rootpass
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: clockwise
+      MYSQL_USER: clockwise_user
+      MYSQL_PASSWORD: clockwise_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./clockwise.sql:/docker-entrypoint-initdb.d/clockwise.sql
+
+volumes:
+  db_data:

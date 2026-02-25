@@ -1,10 +1,6 @@
 <?php
 require_once 'config/database.php';
 
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
-error_reporting(E_ALL);
-
 // Check if user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: login.php');
@@ -530,23 +526,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Work Groups Section -->
             <?php
                 $sql_get_work_groups = "
-                SELECT
-                    wg.work_group_id,
-                    wg.work_group_name,
+                    SELECT
+                        wg.work_group_id,
+                        wg.work_group_name,
 
-                    SUM(CASE WHEN lt.leave_type_code = 'VL' THEN wg.leave_type_quantity ELSE 0 END) AS VL,
-                    SUM(CASE WHEN lt.leave_type_code = 'SL' THEN wg.leave_type_quantity ELSE 0 END) AS SL,
-                    SUM(CASE WHEN lt.leave_type_code = 'EL' THEN wg.leave_type_quantity ELSE 0 END) AS EL,
-                    SUM(CASE WHEN lt.leave_type_code = 'BDay' THEN wg.leave_type_quantity ELSE 0 END) AS BL,
-                    SUM(CASE WHEN lt.leave_type_code = 'NoPay' THEN wg.leave_type_quantity ELSE 0 END) AS NoPay,
-                    SUM(CASE WHEN lt.leave_type_code = 'EDU' THEN wg.leave_type_quantity ELSE 0 END) AS EDU
+                        SUM(CASE WHEN lt.leave_type_code = 'VL' THEN wg.leave_type_quantity ELSE 0 END) AS VL,
+                        SUM(CASE WHEN lt.leave_type_code = 'SL' THEN wg.leave_type_quantity ELSE 0 END) AS SL,
+                        SUM(CASE WHEN lt.leave_type_code = 'EL' THEN wg.leave_type_quantity ELSE 0 END) AS EL,
+                        SUM(CASE WHEN lt.leave_type_code = 'BDay' THEN wg.leave_type_quantity ELSE 0 END) AS BL,
+                        SUM(CASE WHEN lt.leave_type_code = 'NoPay' THEN wg.leave_type_quantity ELSE 0 END) AS NoPay,
+                        SUM(CASE WHEN lt.leave_type_code = 'EDU' THEN wg.leave_type_quantity ELSE 0 END) AS EDU
 
-                FROM work_group_leaves wg
-                JOIN leave_types lt 
-                    ON wg.leave_type_id = lt.leave_type_id
+                    FROM work_group_leaves wg
+                    JOIN leave_types lt 
+                        ON wg.leave_type_id = lt.leave_type_id
 
-                GROUP BY wg.work_group_name
-                ORDER BY wg.work_group_name ASC
+                    GROUP BY wg.work_group_id, wg.work_group_name
+                    ORDER BY wg.work_group_id ASC
                 ";
 
                 $stmt = $pdo->prepare($sql_get_work_groups);
