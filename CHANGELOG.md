@@ -1,3 +1,9 @@
+v1.1.3 [FEATURE]
+        -- Dockerization
+            -- Added Dockerfile for PHP application
+            -- Configured docker-compose.yml with MySQL service and volumes
+            -- Integrated clockwise.sql init script for schema and seed data
+
 v1.1.2 [FEATURE]
         -- Roles
             -- Added Roles for Access Level Functionality in Employee Account Creation
