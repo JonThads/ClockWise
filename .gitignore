@@ -2,5 +2,11 @@
 *.sql
 *.txt
 
-#Ignore database.php
+#Ignore specific files
 database.php
+
+#Ignore folders
+report/
+venv/
+.pytest_cache/
+__pycache__/

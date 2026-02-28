@@ -102,8 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="footer-motto">
-                "Ad Majorem Dei Gloriam"<br>
-                For the Greater Glory of God
+                "Ad Majorem Dei Gloriam"
             </div>
         </div>
 
