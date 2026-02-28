@@ -1,5 +1,9 @@
 #Ignore all SQL files
 *.sql
+*.txt
 
 #Ignore database.php
 database.php
+
+#Ignore Report FOlder
+report/
