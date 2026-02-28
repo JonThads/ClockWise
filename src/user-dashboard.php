@@ -1,318 +1,470 @@
 <?php
 require_once 'config/database.php';
 
-// Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
-// Sample DTR and leave data with codes
-$dtrRecords = [
-    '2026-02-01' => ['status' => 'approved', 'shift' => 'Morning'],
-    '2026-02-03' => ['status' => 'approved', 'shift' => 'Morning'],
-    '2026-02-04' => ['status' => 'approved', 'shift' => 'Afternoon'],
-    '2026-02-05' => ['status' => 'approved', 'shift' => 'Night'],
-    '2026-02-06' => ['status' => 'approved', 'shift' => 'Flexible'],
-    '2026-02-07' => ['status' => 'pending', 'shift' => 'Morning'],
-    '2026-02-08' => ['status' => 'declined', 'shift' => 'Morning'],
-];
+$empId = (int) $_SESSION['user_id'];
 
-$leaveRecords = [
-    '2026-02-10' => ['type' => 'VL', 'status' => 'pending'],
-    '2026-02-11' => ['type' => 'SL', 'status' => 'approved'],
-    '2026-02-12' => ['type' => 'EL', 'status' => 'approved'],
-    '2026-02-13' => ['type' => 'BL', 'status' => 'pending'],
-    '2026-02-14' => ['type' => 'STU', 'status' => 'approved'],
-    '2026-02-17' => ['type' => 'NP', 'status' => 'declined'],
-];
+$stmtEmp = $pdo->prepare("
+    SELECT e.emp_id, e.emp_first_name, e.emp_last_name,
+           e.work_group_id, wg.work_group_name,
+           e.shift_sched_id, e.approver_id, ur.role_name, e.emp_birthday
+    FROM employees e
+    JOIN work_groups wg  ON wg.work_group_id = e.work_group_id
+    LEFT JOIN user_roles ur ON ur.role_id    = e.role_id
+    WHERE e.emp_id = ?
+");
+$stmtEmp->execute([$empId]);
+$employee = $stmtEmp->fetch();
 
-$leaveBalances = [
-    'VL' => 5,
-    'SL' => 7,
-    'EL' => 3,
-    'BL' => 1,
-    'STU' => 2,
-    'NP' => 999
-];
+if (!$employee) {
+    session_destroy();
+    header('Location: login.php');
+    exit();
+}
 
-// Sample approval requests (for supervisors)
-$pendingDTRApprovals = [];
-$pendingLeaveApprovals = [];
+$workGroupId = (int) $employee['work_group_id'];
+$isAdmin     = ($employee['role_name'] === 'Admin');
 
-if ($_SESSION['role'] === 'supervisor' || $_SESSION['role'] === 'executive') {
-    $pendingDTRApprovals = [
-        ['id' => 1, 'employee' => 'John Dela Cruz', 'date' => '2026-02-08', 'shift' => 'Morning (8AM-5PM)', 'submitted' => '2026-02-08 8:05 AM', 'status' => 'pending'],
-    ];
-    
-    $pendingLeaveApprovals = [
-        ['id' => 1, 'employee' => 'Maria Santos', 'type' => 'Vacation Leave (VL)', 'date' => '2026-02-12', 'submitted' => '2026-02-07 2:30 PM', 'status' => 'pending'],
+$stmtEnt = $pdo->prepare("
+    SELECT lt.leave_type_id, lt.leave_type_name, lt.leave_type_code,
+           wgl.leave_type_quantity AS allotted
+    FROM work_group_leaves wgl
+    JOIN leave_types lt ON lt.leave_type_id = wgl.leave_type_id
+    JOIN work_groups wg  ON wg.work_group_name = wgl.work_group_name
+    WHERE wg.work_group_id = ?
+    ORDER BY lt.leave_type_id
+");
+$stmtEnt->execute([$workGroupId]);
+$entitlements = $stmtEnt->fetchAll();
+
+$stmtUsed = $pdo->prepare("
+    SELECT lr.leave_type_id, COUNT(*) AS used
+    FROM leave_records lr
+    WHERE lr.emp_id = ? AND lr.status IN ('pending','approved') AND YEAR(lr.date) = YEAR(CURDATE())
+    GROUP BY lr.leave_type_id
+");
+$stmtUsed->execute([$empId]);
+$usedMap = [];
+foreach ($stmtUsed->fetchAll() as $u) { $usedMap[$u['leave_type_id']] = (int)$u['used']; }
+
+$leaveBalances = [];
+foreach ($entitlements as $ent) {
+    $ltid = (int)$ent['leave_type_id'];
+    $allotted = (int)$ent['allotted'];
+    $used = $usedMap[$ltid] ?? 0;
+    $leaveBalances[$ltid] = [
+        'leave_type_id'   => $ltid,
+        'leave_type_name' => $ent['leave_type_name'],
+        'leave_type_code' => $ent['leave_type_code'],
+        'allotted'        => $allotted,
+        'used'            => $used,
+        'remaining'       => max(0, $allotted - $used),
     ];
 }
 
-// Handle form submissions
-$message = '';
-$messageType = '';
+$currentMonth = isset($_GET['month']) ? (int)$_GET['month'] : (int)date('n');
+$currentYear  = isset($_GET['year'])  ? (int)$_GET['year']  : (int)date('Y');
+if ($currentMonth < 1)  { $currentMonth = 12; $currentYear--; }
+if ($currentMonth > 12) { $currentMonth = 1;  $currentYear++; }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['action'])) {
-        switch ($_POST['action']) {
-            case 'submit_dtr':
-                $message = 'DTR submitted successfully! Status: Pending Approval';
-                $messageType = 'success';
-                break;
-            case 'submit_leave':
-                $message = 'Leave request submitted successfully! Status: Pending Approval';
-                $messageType = 'success';
-                break;
-            case 'approve_dtr':
-                $message = 'DTR request approved!';
-                $messageType = 'success';
-                break;
-            case 'decline_dtr':
-                $message = 'DTR request declined!';
-                $messageType = 'info';
-                break;
-            case 'approve_leave':
-                $message = 'Leave request approved!';
-                $messageType = 'success';
-                break;
-            case 'decline_leave':
-                $message = 'Leave request declined!';
-                $messageType = 'info';
-                break;
+$monthStart = sprintf('%04d-%02d-01', $currentYear, $currentMonth);
+$monthEnd   = date('Y-m-t', strtotime($monthStart));
+
+$stmtDtr = $pdo->prepare("
+    SELECT dr.dtr_id, dr.date, dr.status,
+           ss.shift_sched_code, ss.shift_sched_name, ss.start_time, ss.end_time
+    FROM dtr_records dr
+    JOIN shift_schedules ss ON ss.shift_sched_id = dr.shift_sched_id
+    WHERE dr.emp_id = ? AND dr.date BETWEEN ? AND ?
+");
+$stmtDtr->execute([$empId, $monthStart, $monthEnd]);
+$dtrRecords = [];
+foreach ($stmtDtr->fetchAll() as $row) { $dtrRecords[$row['date']] = $row; }
+
+$stmtLv = $pdo->prepare("
+    SELECT lr.leave_rec_id, lr.date, lr.status, lt.leave_type_code, lt.leave_type_name
+    FROM leave_records lr
+    JOIN leave_types lt ON lt.leave_type_id = lr.leave_type_id
+    WHERE lr.emp_id = ? AND lr.date BETWEEN ? AND ?
+");
+$stmtLv->execute([$empId, $monthStart, $monthEnd]);
+$leaveRecords = [];
+foreach ($stmtLv->fetchAll() as $row) { $leaveRecords[$row['date']] = $row; }
+
+$allShifts = $pdo->query("SELECT * FROM shift_schedules ORDER BY shift_sched_id")->fetchAll();
+
+$pendingDTRApprovals = $pendingLeaveApprovals = [];
+if ($isAdmin) {
+    $stmtDA = $pdo->prepare("
+        SELECT dr.dtr_id, dr.date, dr.status, dr.submitted_at,
+               CONCAT(e.emp_first_name,' ',e.emp_last_name) AS employee_name,
+               ss.shift_sched_name, ss.start_time, ss.end_time
+        FROM dtr_records dr
+        JOIN employees e        ON e.emp_id          = dr.emp_id
+        JOIN shift_schedules ss ON ss.shift_sched_id = dr.shift_sched_id
+        WHERE dr.status = 'pending'
+        ORDER BY dr.submitted_at DESC
+    ");
+    $stmtDA->execute();
+    $pendingDTRApprovals = $stmtDA->fetchAll();
+
+    $stmtLA = $pdo->prepare("
+        SELECT lr.leave_rec_id, lr.date, lr.status, lr.submitted_at,
+               CONCAT(e.emp_first_name,' ',e.emp_last_name) AS employee_name,
+               lt.leave_type_name, lt.leave_type_code
+        FROM leave_records lr
+        JOIN employees e  ON e.emp_id          = lr.emp_id
+        JOIN leave_types lt ON lt.leave_type_id = lr.leave_type_id
+        WHERE lr.status = 'pending'
+        ORDER BY lr.submitted_at DESC
+    ");
+    $stmtLA->execute();
+    $pendingLeaveApprovals = $stmtLA->fetchAll();
+}
+
+$message = ''; $messageType = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+
+    if ($action === 'submit_dtr') {
+        $date = $_POST['date'] ?? '';
+        $shiftSchedId = (int)($_POST['shift_sched_id'] ?? 0);
+        if (!$date || !$shiftSchedId) {
+            $message = 'Please select a valid date and shift.'; $messageType = 'error';
+        } else {
+            $chk = $pdo->prepare("SELECT dtr_id FROM dtr_records WHERE emp_id = ? AND date = ?");
+            $chk->execute([$empId, $date]);
+            if ($chk->fetch()) {
+                $message = 'A DTR entry for ' . htmlspecialchars($date) . ' already exists.'; $messageType = 'error';
+            } else {
+                $pdo->prepare("INSERT INTO dtr_records (emp_id, shift_sched_id, date, status) VALUES (?, ?, ?, 'pending')")
+                    ->execute([$empId, $shiftSchedId, $date]);
+                $message = 'DTR submitted for ' . htmlspecialchars($date) . '. Status: Pending Approval.'; $messageType = 'success';
+            }
         }
+    } elseif ($action === 'submit_leave') {
+        $date = $_POST['date'] ?? ''; $leaveTypeId = (int)($_POST['leave_type_id'] ?? 0);
+        if (!$date || !$leaveTypeId) {
+            $message = 'Please select a valid date and leave type.'; $messageType = 'error';
+        } elseif (!isset($leaveBalances[$leaveTypeId])) {
+            $message = 'That leave type is not available for your work group.'; $messageType = 'error';
+        } else {
+            $bal = $leaveBalances[$leaveTypeId];
+            $isLWOP = ($bal['leave_type_code'] === 'NoPay');
+            if (!$isLWOP && $bal['remaining'] <= 0) {
+                $message = 'You have no remaining ' . htmlspecialchars($bal['leave_type_name']) . ' balance.'; $messageType = 'error';
+            } else {
+                $chk = $pdo->prepare("SELECT leave_rec_id FROM leave_records WHERE emp_id = ? AND date = ?");
+                $chk->execute([$empId, $date]);
+                if ($chk->fetch()) {
+                    $message = 'A leave entry for ' . htmlspecialchars($date) . ' already exists.'; $messageType = 'error';
+                } else {
+                    $pdo->prepare("INSERT INTO leave_records (emp_id, leave_type_id, date, status) VALUES (?, ?, ?, 'pending')")
+                        ->execute([$empId, $leaveTypeId, $date]);
+                    $message = htmlspecialchars($bal['leave_type_name']) . ' submitted for ' . htmlspecialchars($date) . '. Status: Pending Approval.'; $messageType = 'success';
+                }
+            }
+        }
+    } elseif (in_array($action, ['approve_dtr','decline_dtr']) && $isAdmin) {
+        $dtrId = (int)($_POST['dtr_id'] ?? 0);
+        $newStatus = ($action === 'approve_dtr') ? 'approved' : 'declined';
+        $pdo->prepare("UPDATE dtr_records SET status = ? WHERE dtr_id = ?")->execute([$newStatus, $dtrId]);
+        $message = 'DTR request ' . $newStatus . '.'; $messageType = ($newStatus === 'approved') ? 'success' : 'info';
+    } elseif (in_array($action, ['approve_leave','decline_leave']) && $isAdmin) {
+        $leaveRecId = (int)($_POST['leave_rec_id'] ?? 0);
+        $newStatus = ($action === 'approve_leave') ? 'approved' : 'declined';
+        $pdo->prepare("UPDATE leave_records SET status = ? WHERE leave_rec_id = ?")->execute([$newStatus, $leaveRecId]);
+        $message = 'Leave request ' . $newStatus . '.'; $messageType = ($newStatus === 'approved') ? 'success' : 'info';
     }
+
+    header("Location: user-dashboard.php?month=$currentMonth&year=$currentYear&msg=" . urlencode($message) . "&mtype=" . urlencode($messageType));
+    exit();
 }
 
-// Get current month and year
-$currentMonth = $_GET['month'] ?? date('n');
-$currentYear = $_GET['year'] ?? date('Y');
+if (empty($message) && isset($_GET['msg'])) {
+    $message = $_GET['msg']; $messageType = $_GET['mtype'] ?? 'info';
+}
+
+$shiftLegend = $pdo->query("SELECT shift_sched_code, shift_sched_name FROM shift_schedules ORDER BY shift_sched_id")->fetchAll();
+$ltLegend    = $pdo->query("SELECT leave_type_code, leave_type_name FROM leave_types ORDER BY leave_type_id")->fetchAll();
+$birthdayMonth = $employee['emp_birthday'] ? (int)date('n', strtotime($employee['emp_birthday'])) : null;
+$monthName = date('F Y', strtotime("$currentYear-$currentMonth-01"));
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClockWise - Employee Dashboard</title>
+    <title>My Calendar – ClockWise</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/dashboard.css">
     <link rel="stylesheet" href="assets/css/calendar.css">
 </head>
 <body>
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo-section">
-            <div class="logo">⏰</div>
-            <h1 class="brand-name">ClockWise</h1>
-        </div>
 
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- WCAG 1.3.1 – sidebar is a nav landmark -->
+    <nav class="sidebar" aria-label="Main navigation">
+        <div class="logo-section">
+            <div class="logo" aria-hidden="true">⏰</div>
+            <p class="brand-name">ClockWise</p>
+        </div>
         <ul class="sidebar-menu">
-            <li><a href="#" class="menu-link active" onclick="showSection('calendar')">📅 My Calendar</a></li>
-            <?php if ($_SESSION['role'] === 'supervisor' || $_SESSION['role'] === 'executive'): ?>
-            <li><a href="#" class="menu-link" onclick="showSection('approvals')">✅ Approvals</a></li>
+            <li>
+                <a href="#calendar" class="menu-link active" aria-current="page"
+                   onclick="showSection('calendar', this); return false;">
+                    <span aria-hidden="true">📅</span> My Calendar
+                </a>
+            </li>
+            <?php if ($isAdmin): ?>
+            <li>
+                <a href="#approvals" class="menu-link"
+                   onclick="showSection('approvals', this); return false;">
+                    <span aria-hidden="true">✅</span> Approvals
+                </a>
+            </li>
             <?php endif; ?>
         </ul>
-    </aside>
+    </nav>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="top-bar">
-            <h1 class="page-title">My Calendar</h1>
+    <main class="main-content" id="main-content">
+        <header class="top-bar">
+            <h1 class="page-title" id="page-heading">My Calendar</h1>
             <div class="user-info">
-                <div class="user-avatar"><?= strtoupper(substr($_SESSION['name'], 0, 1)) ?></div>
-                <div>
-                    <div style="font-weight: 600;"><?= htmlspecialchars($_SESSION['name']) ?></div>
-                    <div style="font-size: 0.85em; opacity: 0.9;"><?= ucfirst($_SESSION['role']) ?></div>
+                <div class="user-avatar" aria-hidden="true">
+                    <?= strtoupper(substr($employee['emp_first_name'], 0, 1)) ?>
                 </div>
-                <a href="logout.php" class="logout-btn">Logout</a>
+                <div class="user-details">
+                    <span class="user-name">
+                        <?= htmlspecialchars($employee['emp_first_name'] . ' ' . $employee['emp_last_name']) ?>
+                    </span>
+                    <span class="user-role">
+                        <?= htmlspecialchars($employee['work_group_name']) ?><?= $isAdmin ? ' · Admin' : '' ?>
+                    </span>
+                </div>
+                <a href="logout.php" class="logout-btn">Log out</a>
             </div>
-        </div>
+        </header>
 
         <div class="content-area">
+
             <?php if ($message): ?>
-                <div class="alert alert-<?= $messageType ?>">
+                <div
+                    class="alert alert-<?= htmlspecialchars($messageType) ?>"
+                    role="<?= $messageType === 'error' ? 'alert' : 'status' ?>"
+                    aria-live="<?= $messageType === 'error' ? 'assertive' : 'polite' ?>"
+                >
                     <?= htmlspecialchars($message) ?>
                 </div>
             <?php endif; ?>
 
-            <!-- Calendar Section -->
-            <div id="calendar" class="section active">
+            <!-- ══ Calendar Section ══════════════════════════════════════════ -->
+            <section id="calendar" class="section active" aria-labelledby="calendar-heading">
                 <div class="calendar-container">
-                    <!-- Calendar Legend -->
-                    <div class="calendar-legend">
-                        <div style="font-weight: 700; width: 100%; margin-bottom: 10px; color: var(--ateneo-blue);">Legend:</div>
-                        
-                        <div class="legend-item">
-                            <div class="legend-box" style="background: #d4edda;"></div>
-                            <span>Approved</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-box" style="background: #fff3cd;"></div>
-                            <span>Pending</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-box" style="background: #f8d7da;"></div>
-                            <span>Declined</span>
-                        </div>
-                        
-                        <div style="width: 100%; border-top: 1px solid var(--border-color); margin: 10px 0;"></div>
-                        
-                        <div class="legend-item">
-                            <strong>Shift Codes:</strong>
-                        </div>
-                        <?php 
-                        $sql_get_shift_schedules = "SELECT
-                            shift_sched_name,
-                            shift_sched_code
-                            FROM shift_schedules
-                            ORDER BY shift_sched_id ASC";
 
-                            $stmt = $pdo->prepare($sql_get_shift_schedules);
-                            $stmt->execute();
-                            $get_shift_schedules = $stmt->fetchAll();
+                    <!-- Legend -->
+                    <div class="calendar-legend" aria-label="Calendar legend">
+                        <p style="font-weight:700;width:100%;margin-bottom:8px;color:var(--ateneo-blue);">Legend</p>
+                        <ul style="display:contents;list-style:none;">
+                            <li class="legend-item">
+                                <div class="legend-box" style="background:#d4edda;" aria-hidden="true"></div>
+                                <span>Approved</span>
+                            </li>
+                            <li class="legend-item">
+                                <div class="legend-box" style="background:#fff3cd;" aria-hidden="true"></div>
+                                <span>Pending</span>
+                            </li>
+                            <li class="legend-item">
+                                <div class="legend-box" style="background:#f8d7da;" aria-hidden="true"></div>
+                                <span>Declined</span>
+                            </li>
+                        </ul>
 
-                            foreach ($get_shift_schedules as $shift_sched) {
-                                echo '<div class="legend-item">';
-                                echo '<span style="background: rgba(0, 85, 164, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: 700;">' . htmlspecialchars($shift_sched['shift_sched_code']) . '</span>';
-                                echo '<span>' . htmlspecialchars($shift_sched['shift_sched_name']) . '</span>';
-                                echo '</div>'; } ?>
-                        
-                        <div style="width: 100%; border-top: 1px solid var(--border-color); margin: 10px 0;"></div>
-                        
-                        <div class="legend-item">
-                            <strong>Leave Codes:</strong>
-                        </div>
+                        <hr style="width:100%;border-color:var(--border-color);margin:8px 0;" aria-hidden="true">
+                        <p style="font-weight:700;width:100%;">Shift Codes</p>
+                        <ul style="display:contents;list-style:none;">
+                            <?php foreach ($shiftLegend as $sl): ?>
+                            <li class="legend-item">
+                                <span style="background:rgba(0,85,164,0.1);padding:2px 6px;border-radius:4px;font-weight:700;">
+                                    <?= htmlspecialchars($sl['shift_sched_code']) ?>
+                                </span>
+                                <span><?= htmlspecialchars($sl['shift_sched_name']) ?></span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
 
-                        <?php 
-                            $sql_get_leave_types = "SELECT
-                            leave_type_code,
-                            leave_type_name
-                            FROM leave_types
-                            ORDER BY leave_type_id ASC";
-                            
-                            $stmt = $pdo->prepare($sql_get_leave_types);
-                            $stmt->execute();
-                            $get_leave_types = $stmt->fetchAll();
-                            
-                            foreach ($get_leave_types as $leave_types) {
-                                echo '<div class="legend-item">';
-                                echo '<span style="font-weight: 700;">'. htmlspecialchars($leave_types['leave_type_code']) . " = " . htmlspecialchars($leave_types['leave_type_name']) . '</span>';
-                                echo '</div>'; } ?>
-                        
+                        <hr style="width:100%;border-color:var(--border-color);margin:8px 0;" aria-hidden="true">
+                        <p style="font-weight:700;width:100%;">Leave Codes</p>
+                        <ul style="display:contents;list-style:none;">
+                            <?php foreach ($ltLegend as $lt): ?>
+                            <li class="legend-item">
+                                <span style="font-weight:700;">
+                                    <?= htmlspecialchars($lt['leave_type_code']) ?> = <?= htmlspecialchars($lt['leave_type_name']) ?>
+                                </span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+
+                        <?php if (!empty($leaveBalances)): ?>
+                        <hr style="width:100%;border-color:var(--border-color);margin:8px 0;" aria-hidden="true">
+                        <p style="font-weight:700;width:100%;">Your Leave Balances</p>
+                        <ul style="display:contents;list-style:none;">
+                            <?php foreach ($leaveBalances as $lb): ?>
+                            <li class="legend-item" style="justify-content:space-between;width:100%;">
+                                <span><?= htmlspecialchars($lb['leave_type_code']) ?></span>
+                                <span style="font-weight:600;">
+                                    <?= $lb['remaining'] == 9999 ? '∞' : $lb['remaining'] ?>
+                                    /
+                                    <?= $lb['allotted'] == 9999 ? '∞' : $lb['allotted'] ?>
+                                </span>
+                            </li>
+                            <?php endforeach; ?>
+                        </ul>
+                        <?php endif; ?>
                     </div>
 
+                    <!-- Calendar header + nav -->
                     <div class="calendar-header">
-                        <h2><?= date('F Y', strtotime("$currentYear-$currentMonth-01")) ?></h2>
-                        <div class="calendar-nav">
-                            <a href="?month=<?= $currentMonth - 1 ?>&year=<?= $currentYear ?>" class="nav-btn">← Previous</a>
-                            <a href="?month=<?= $currentMonth + 1 ?>&year=<?= $currentYear ?>" class="nav-btn">Next →</a>
-                        </div>
+                        <!-- WCAG 2.4.6 – heading describes content -->
+                        <h2 id="calendar-heading"><?= htmlspecialchars($monthName) ?></h2>
+                        <nav class="calendar-nav" aria-label="Month navigation">
+                            <a href="?month=<?= $currentMonth - 1 ?>&amp;year=<?= $currentYear ?>"
+                               class="nav-btn"
+                               aria-label="Previous month">
+                                ← Previous
+                            </a>
+                            <a href="?month=<?= $currentMonth + 1 ?>&amp;year=<?= $currentYear ?>"
+                               class="nav-btn"
+                               aria-label="Next month">
+                                Next →
+                            </a>
+                        </nav>
                     </div>
 
-                    <div class="calendar-grid">
+                    <!-- Calendar grid (WCAG 1.3.1 – role="grid", aria-label) -->
+                    <div
+                        class="calendar-grid"
+                        role="grid"
+                        aria-label="<?= htmlspecialchars($monthName) ?> calendar"
+                    >
                         <?php
-                        $days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-                        foreach ($days as $day) {
-                            echo "<div class='day-header'>$day</div>";
-                        }
-
-                        $firstDay = date('w', strtotime("$currentYear-$currentMonth-01"));
-                        $totalDays = date('t', strtotime("$currentYear-$currentMonth-01"));
-                        $today = date('j');
-                        $thisMonth = date('n');
-                        $thisYear = date('Y');
-
-                        // Empty cells before first day
-                        for ($i = 0; $i < $firstDay; $i++) {
-                            echo "<div></div>";
-                        }
-
-                        // Days of month
-                        for ($day = 1; $day <= $totalDays; $day++) {
-                            $dateStr = sprintf("%04d-%02d-%02d", $currentYear, $currentMonth, $day);
-                            $isToday = ($day == $today && $currentMonth == $thisMonth && $currentYear == $thisYear) ? 'today' : '';
-                            
-                            $dtr = $dtrRecords[$dateStr] ?? null;
-                            $leave = $leaveRecords[$dateStr] ?? null;
-
-                            echo "<div class='day-cell $isToday' onclick=\"showDTRModal('$dateStr')\">";
-                            echo "<div class='day-number'>$day</div>";
-                            
-                            // Show DTR status with code
-                            if ($dtr) {
-                                $statusClass = "status-{$dtr['status']}";
-                                echo "<div class='day-status $statusClass'>DTR</div>";
-                                
-                                // Show shift code
-                                $shiftCode = '';
-                                switch($dtr['shift']) {
-                                    case 'Morning': $shiftCode = 'M'; break;
-                                    case 'Afternoon': $shiftCode = 'A'; break;
-                                    case 'Night': $shiftCode = 'N'; break;
-                                    case 'Flexible': $shiftCode = 'F'; break;
-                                }
-                                echo "<div class='shift-code'>$shiftCode</div>";
-                            }
-                            
-                            // Show Leave code
-                            if ($leave) {
-                                $statusClass = "status-{$leave['status']}";
-                                $leaveCode = $leave['type']; // VL, SL, EL, BL, STU, NP
-                                echo "<div class='day-status $statusClass'>$leaveCode</div>";
-                            }
-                            
-                            echo "</div>";
-                        }
+                        $dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                        $dayAbbr  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                        foreach ($dayAbbr as $i => $abbr):
                         ?>
-                    </div>
-                </div>
-            </div>
+                        <!-- WCAG 1.3.1 – columnheader with full name for AT -->
+                        <div class="day-header" role="columnheader" aria-label="<?= $dayNames[$i] ?>">
+                            <abbr title="<?= $dayNames[$i] ?>"><?= $abbr ?></abbr>
+                        </div>
+                        <?php endforeach;
 
-            <!-- Approvals Section -->
-            <?php if ($_SESSION['role'] === 'supervisor' || $_SESSION['role'] === 'executive'): ?>
-            <div id="approvals" class="section">
-                <h2 style="margin-bottom: 20px;">Pending Approvals</h2>
+                        $firstDay  = (int)date('w', strtotime("$currentYear-$currentMonth-01"));
+                        $totalDays = (int)date('t', strtotime("$currentYear-$currentMonth-01"));
+                        $today     = (int)date('j');
+                        $thisMonth = (int)date('n');
+                        $thisYear  = (int)date('Y');
 
-                <h3 style="margin-top: 20px; margin-bottom: 15px;">DTR Requests</h3>
+                        // Empty cells before month starts
+                        for ($i = 0; $i < $firstDay; $i++) {
+                            echo '<div role="gridcell" aria-hidden="true"></div>';
+                        }
+
+                        for ($day = 1; $day <= $totalDays; $day++):
+                            $dateStr = sprintf('%04d-%02d-%02d', $currentYear, $currentMonth, $day);
+                            $isToday = ($day == $today && $currentMonth == $thisMonth && $currentYear == $thisYear);
+                            $dtr     = $dtrRecords[$dateStr]   ?? null;
+                            $leave   = $leaveRecords[$dateStr] ?? null;
+
+                            // Build accessible label
+                            $cellLabel = $dayNames[(int)date('w', strtotime($dateStr))] . ', ' .
+                                         date('F j, Y', strtotime($dateStr));
+                            if ($dtr)   $cellLabel .= ', DTR ' . $dtr['status'];
+                            if ($leave) $cellLabel .= ', ' . $leave['leave_type_code'] . ' ' . $leave['status'];
+                            if ($isToday) $cellLabel .= ', Today';
+                        ?>
+                        <div
+                            class="day-cell<?= $isToday ? ' today' : '' ?>"
+                            role="gridcell"
+                            tabindex="0"
+                            aria-label="<?= htmlspecialchars($cellLabel) ?>. Press Enter to submit DTR or leave."
+                            onclick="showDTRModal('<?= htmlspecialchars($dateStr) ?>')"
+                            onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showDTRModal('<?= htmlspecialchars($dateStr) ?>')}"
+                        >
+                            <div class="day-number" aria-hidden="true"><?= $day ?></div>
+                            <?php if ($dtr): ?>
+                                <div class="day-status status-<?= htmlspecialchars($dtr['status']) ?>" aria-hidden="true">DTR</div>
+                                <div class="shift-code" aria-hidden="true"><?= htmlspecialchars($dtr['shift_sched_code']) ?></div>
+                            <?php endif; ?>
+                            <?php if ($leave): ?>
+                                <div class="day-status status-<?= htmlspecialchars($leave['status']) ?>" aria-hidden="true">
+                                    <?= htmlspecialchars($leave['leave_type_code']) ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php endfor; ?>
+                    </div><!-- /.calendar-grid -->
+
+                </div><!-- /.calendar-container -->
+            </section>
+
+            <!-- ══ Approvals Section (Admin only) ══════════════════════════ -->
+            <?php if ($isAdmin): ?>
+            <section id="approvals" class="section" aria-labelledby="approvals-heading">
+                <h2 id="approvals-heading" class="mb-3">Pending Approvals</h2>
+
+                <h3 id="dtr-approvals-heading" class="mt-2 mb-2">DTR Requests</h3>
                 <div class="table-container">
-                    <table>
+                    <table aria-labelledby="dtr-approvals-heading">
                         <thead>
                             <tr>
-                                <th>Employee</th>
-                                <th>Date</th>
-                                <th>Shift</th>
-                                <th>Submitted</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th scope="col">Employee</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Shift</th>
+                                <th scope="col">Submitted</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (count($pendingDTRApprovals) > 0): ?>
-                                <?php foreach ($pendingDTRApprovals as $dtr): ?>
+                            <?php if ($pendingDTRApprovals): ?>
+                                <?php foreach ($pendingDTRApprovals as $row): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($dtr['employee']) ?></td>
-                                    <td><?= htmlspecialchars($dtr['date']) ?></td>
-                                    <td><?= htmlspecialchars($dtr['shift']) ?></td>
-                                    <td><?= htmlspecialchars($dtr['submitted']) ?></td>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['date']) ?></td>
+                                    <td><?= htmlspecialchars($row['shift_sched_name']) ?>
+                                        (<?= date('g:i A', strtotime($row['start_time'])) ?>–<?= date('g:i A', strtotime($row['end_time'])) ?>)
+                                    </td>
+                                    <td><?= htmlspecialchars($row['submitted_at']) ?></td>
                                     <td><span class="badge badge-pending">Pending</span></td>
                                     <td>
-                                        <form method="POST" style="display: inline;">
+                                        <form method="POST" style="display:inline;">
                                             <input type="hidden" name="action" value="approve_dtr">
-                                            <input type="hidden" name="dtr_id" value="<?= $dtr['id'] ?>">
-                                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                            <input type="hidden" name="dtr_id" value="<?= (int)$row['dtr_id'] ?>">
+                                            <button type="submit" class="btn btn-success btn-sm"
+                                                    aria-label="Approve DTR for <?= htmlspecialchars($row['employee_name']) ?> on <?= htmlspecialchars($row['date']) ?>">
+                                                Approve
+                                            </button>
                                         </form>
-                                        <form method="POST" style="display: inline;">
+                                        <form method="POST" style="display:inline;">
                                             <input type="hidden" name="action" value="decline_dtr">
-                                            <input type="hidden" name="dtr_id" value="<?= $dtr['id'] ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+                                            <input type="hidden" name="dtr_id" value="<?= (int)$row['dtr_id'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                    aria-label="Decline DTR for <?= htmlspecialchars($row['employee_name']) ?> on <?= htmlspecialchars($row['date']) ?>">
+                                                Decline
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                                    <td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px;">
                                         No pending DTR requests
                                     </td>
                                 </tr>
@@ -321,45 +473,51 @@ $currentYear = $_GET['year'] ?? date('Y');
                     </table>
                 </div>
 
-                <h3 style="margin-top: 40px; margin-bottom: 15px;">Leave Requests</h3>
+                <h3 id="leave-approvals-heading" class="mt-3 mb-2">Leave Requests</h3>
                 <div class="table-container">
-                    <table>
+                    <table aria-labelledby="leave-approvals-heading">
                         <thead>
                             <tr>
-                                <th>Employee</th>
-                                <th>Leave Type</th>
-                                <th>Date</th>
-                                <th>Submitted</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th scope="col">Employee</th>
+                                <th scope="col">Leave Type</th>
+                                <th scope="col">Date</th>
+                                <th scope="col">Submitted</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php if (count($pendingLeaveApprovals) > 0): ?>
-                                <?php foreach ($pendingLeaveApprovals as $leave): ?>
+                            <?php if ($pendingLeaveApprovals): ?>
+                                <?php foreach ($pendingLeaveApprovals as $row): ?>
                                 <tr>
-                                    <td><?= htmlspecialchars($leave['employee']) ?></td>
-                                    <td><?= htmlspecialchars($leave['type']) ?></td>
-                                    <td><?= htmlspecialchars($leave['date']) ?></td>
-                                    <td><?= htmlspecialchars($leave['submitted']) ?></td>
+                                    <td><?= htmlspecialchars($row['employee_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['leave_type_name']) ?> (<?= htmlspecialchars($row['leave_type_code']) ?>)</td>
+                                    <td><?= htmlspecialchars($row['date']) ?></td>
+                                    <td><?= htmlspecialchars($row['submitted_at']) ?></td>
                                     <td><span class="badge badge-pending">Pending</span></td>
                                     <td>
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="approve_leave">
-                                            <input type="hidden" name="leave_id" value="<?= $leave['id'] ?>">
-                                            <button type="submit" class="btn btn-success btn-sm">Approve</button>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action"       value="approve_leave">
+                                            <input type="hidden" name="leave_rec_id" value="<?= (int)$row['leave_rec_id'] ?>">
+                                            <button type="submit" class="btn btn-success btn-sm"
+                                                    aria-label="Approve leave for <?= htmlspecialchars($row['employee_name']) ?> on <?= htmlspecialchars($row['date']) ?>">
+                                                Approve
+                                            </button>
                                         </form>
-                                        <form method="POST" style="display: inline;">
-                                            <input type="hidden" name="action" value="decline_leave">
-                                            <input type="hidden" name="leave_id" value="<?= $leave['id'] ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm">Decline</button>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action"       value="decline_leave">
+                                            <input type="hidden" name="leave_rec_id" value="<?= (int)$row['leave_rec_id'] ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                    aria-label="Decline leave for <?= htmlspecialchars($row['employee_name']) ?> on <?= htmlspecialchars($row['date']) ?>">
+                                                Decline
+                                            </button>
                                         </form>
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 40px;">
+                                    <td colspan="6" style="text-align:center;color:var(--text-muted);padding:40px;">
                                         No pending leave requests
                                     </td>
                                 </tr>
@@ -367,131 +525,204 @@ $currentYear = $_GET['year'] ?? date('Y');
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </section>
             <?php endif; ?>
-        </div>
+
+        </div><!-- /.content-area -->
     </main>
 
-    <!-- DTR/Leave Modal -->
-    <div id="dtrModal" class="modal">
+    <!-- ══ DTR / Leave Modal (WCAG 4.1.2 role="dialog", aria-modal, aria-labelledby) ══ -->
+    <div
+        id="dtrModal"
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+        aria-hidden="true"
+    >
         <div class="modal-content">
             <div class="modal-header">
-                <h3 id="modalTitle">Submit DTR</h3>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <h2 id="modalTitle">Choose Action</h2>
+                <!-- WCAG 1.1.1 – aria-label describes purpose -->
+                <button class="close-btn" onclick="closeModal()" aria-label="Close dialog">
+                    <span aria-hidden="true">×</span>
+                </button>
             </div>
 
+            <!-- Step 1: choose action -->
             <div id="actionSelection">
-                <h4 style="margin-bottom: 15px;">Choose Action:</h4>
-                <button class="btn btn-primary" onclick="showDTRForm()" style="width: 100%; margin-bottom: 10px;">
-                    📋 Submit DTR (Daily Time Record)
-                </button>
-                <button class="btn btn-secondary" onclick="showLeaveForm()" style="width: 100%;">
-                    🏖️ File Leave Request
-                </button>
+                <p id="actionPrompt" class="mb-2" style="font-weight:600;">Choose an action for this date:</p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    <button class="btn btn-primary" onclick="showDTRForm()" style="width:100%;">
+                        <span aria-hidden="true">📋</span> Submit DTR (Daily Time Record)
+                    </button>
+                    <button class="btn btn-secondary" onclick="showLeaveForm()" style="width:100%;">
+                        <span aria-hidden="true">🏖️</span> File Leave Request
+                    </button>
+                </div>
             </div>
 
-            <!-- DTR Form -->
-            <div id="dtrForm" style="display: none;">
+            <!-- Step 2a: DTR form -->
+            <div id="dtrForm" hidden>
                 <form method="POST">
                     <input type="hidden" name="action" value="submit_dtr">
-                    <input type="hidden" name="date" id="selectedDate">
+                    <input type="hidden" name="date"   id="selectedDate">
 
                     <div class="form-group">
-                        <label class="form-label">Select Shift</label>
-                        <select name="shift" class="form-select" required>
-                            <option value="">Choose shift...</option>
-                            <option value="morning">Morning (8:00 AM - 5:00 PM)</option>
-                            <option value="afternoon">Afternoon (2:00 PM - 11:00 PM)</option>
-                            <option value="night">Night (10:00 PM - 7:00 AM)</option>
-                            <option value="flexible">Flexible Hours</option>
+                        <label class="form-label" for="shift_sched_id">
+                            Select Shift
+                            <span class="required" aria-hidden="true">*</span>
+                            <span class="sr-only">(required)</span>
+                        </label>
+                        <select name="shift_sched_id" id="shift_sched_id" class="form-select" required aria-required="true">
+                            <option value="">Choose shift…</option>
+                            <?php foreach ($allShifts as $s): ?>
+                            <option value="<?= (int)$s['shift_sched_id'] ?>">
+                                <?= htmlspecialchars($s['shift_sched_name']) ?>
+                                (<?= date('g:i A', strtotime($s['start_time'])) ?>–<?= date('g:i A', strtotime($s['end_time'])) ?>)
+                                [<?= htmlspecialchars($s['shift_sched_code']) ?>]
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display:flex;gap:10px;">
                         <button type="button" class="btn btn-secondary" onclick="backToSelection()">Back</button>
                         <button type="submit" class="btn btn-primary">Submit DTR</button>
                     </div>
                 </form>
             </div>
 
-            <!-- Leave Form -->
-            <div id="leaveForm" style="display: none;">
+            <!-- Step 2b: Leave form -->
+            <div id="leaveForm" hidden>
                 <form method="POST">
                     <input type="hidden" name="action" value="submit_leave">
-                    <input type="hidden" name="date" id="selectedDateLeave">
+                    <input type="hidden" name="date"   id="selectedDateLeave">
 
                     <div class="form-group">
-                        <label class="form-label">Leave Type</label>
-                        <select name="leave_type" class="form-select" required>
-                            <option value="">Choose leave type...</option>
-                            <option value="VL">Vacation Leave (VL) - <?= $leaveBalances['VL'] ?> days</option>
-                            <option value="SL">Sick Leave (SL) - <?= $leaveBalances['SL'] ?> days</option>
-                            <option value="EL">Emergency Leave (EL) - <?= $leaveBalances['EL'] ?> days</option>
-                            <option value="BL">Birthday Leave (BL) - <?= $leaveBalances['BL'] ?> day</option>
-                            <option value="STU">Study Leave (STU) - <?= $leaveBalances['STU'] ?> days</option>
-                            <option value="NP">Leave w/o Pay (NP)</option>
+                        <label class="form-label" for="leave_type_id">
+                            Leave Type
+                            <span class="required" aria-hidden="true">*</span>
+                            <span class="sr-only">(required)</span>
+                        </label>
+                        <select name="leave_type_id" id="leave_type_id" class="form-select" required aria-required="true">
+                            <option value="">Choose leave type…</option>
+                            <?php foreach ($leaveBalances as $lb):
+                                if ($lb['leave_type_code'] === 'BDay' && $birthdayMonth !== null && $birthdayMonth !== (int)date('n')) continue;
+                                $isLWOP    = ($lb['leave_type_code'] === 'NoPay');
+                                $noBalance = (!$isLWOP && $lb['remaining'] <= 0);
+                                $label     = htmlspecialchars($lb['leave_type_name']) . ' (' . htmlspecialchars($lb['leave_type_code']) . ')';
+                                $balance   = $isLWOP ? '' : ' — ' . $lb['remaining'] . ' / ' . $lb['allotted'] . ' days';
+                            ?>
+                            <option
+                                value="<?= (int)$lb['leave_type_id'] ?>"
+                                <?= $noBalance ? 'disabled aria-disabled="true"' : '' ?>
+                            >
+                                <?= $label . $balance . ($noBalance ? ' [No Balance]' : '') ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
 
-                    <div style="display: flex; gap: 10px;">
+                    <div style="display:flex;gap:10px;">
                         <button type="button" class="btn btn-secondary" onclick="backToSelection()">Back</button>
                         <button type="submit" class="btn btn-primary">Submit Leave</button>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
+
+        </div><!-- /.modal-content -->
+    </div><!-- /#dtrModal -->
 
     <script>
-        function showSection(sectionId) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(sectionId).classList.add('active');
-            
-            document.querySelectorAll('.menu-link').forEach(link => link.classList.remove('active'));
-            event.target.classList.add('active');
-        }
+    /* WCAG 2.4.3 – Focus management for modal */
+    var lastFocusedCell = null;
 
-        function showDTRModal(date) {
-            document.getElementById('dtrModal').classList.add('active');
-            document.getElementById('selectedDate').value = date;
-            document.getElementById('selectedDateLeave').value = date;
-            document.getElementById('modalTitle').textContent = 'Action for ' + date;
-            
-            // Reset to action selection
-            document.getElementById('actionSelection').style.display = 'block';
-            document.getElementById('dtrForm').style.display = 'none';
-            document.getElementById('leaveForm').style.display = 'none';
+    function showSection(sectionId, linkEl) {
+        document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+        var target = document.getElementById(sectionId);
+        if (target) {
+            target.classList.add('active');
+            var heading = target.querySelector('h2');
+            if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus(); }
         }
+        document.querySelectorAll('.menu-link').forEach(function(l) {
+            l.classList.remove('active'); l.removeAttribute('aria-current');
+        });
+        if (linkEl) { linkEl.classList.add('active'); linkEl.setAttribute('aria-current', 'page'); }
+        var headings = { calendar: 'My Calendar', approvals: 'Approvals' };
+        var ph = document.getElementById('page-heading');
+        if (ph && headings[sectionId]) ph.textContent = headings[sectionId];
+    }
 
-        function showDTRForm() {
-            document.getElementById('actionSelection').style.display = 'none';
-            document.getElementById('dtrForm').style.display = 'block';
-            document.getElementById('modalTitle').textContent = 'Submit DTR';
-        }
+    function showDTRModal(date) {
+        lastFocusedCell = document.activeElement;
+        var modal = document.getElementById('dtrModal');
+        document.getElementById('selectedDate').value      = date;
+        document.getElementById('selectedDateLeave').value = date;
+        document.getElementById('modalTitle').textContent  = 'Action for ' + date;
+        resetModal();
+        modal.classList.add('active');
+        modal.removeAttribute('aria-hidden');
+        // Focus first focusable element inside modal (WCAG 2.4.3)
+        var firstFocusable = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (firstFocusable) firstFocusable.focus();
+        // Trap focus inside modal
+        modal.addEventListener('keydown', trapFocus);
+    }
 
-        function showLeaveForm() {
-            document.getElementById('actionSelection').style.display = 'none';
-            document.getElementById('leaveForm').style.display = 'block';
-            document.getElementById('modalTitle').textContent = 'File Leave Request';
-        }
+    function closeModal() {
+        var modal = document.getElementById('dtrModal');
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        modal.removeEventListener('keydown', trapFocus);
+        // Return focus to the cell that triggered the modal (WCAG 2.4.3)
+        if (lastFocusedCell) lastFocusedCell.focus();
+    }
 
-        function backToSelection() {
-            document.getElementById('actionSelection').style.display = 'block';
-            document.getElementById('dtrForm').style.display = 'none';
-            document.getElementById('leaveForm').style.display = 'none';
-            document.getElementById('modalTitle').textContent = 'Choose Action';
+    function trapFocus(e) {
+        if (e.key !== 'Tab') {
+            if (e.key === 'Escape') { closeModal(); return; }
+            return;
         }
+        var modal = document.getElementById('dtrModal');
+        var focusable = modal.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        var first = focusable[0]; var last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+            if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+        } else {
+            if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+    }
 
-        function closeModal() {
-            document.getElementById('dtrModal').classList.remove('active');
-        }
+    function showDTRForm() {
+        document.getElementById('actionSelection').hidden = true;
+        document.getElementById('dtrForm').hidden         = false;
+        document.getElementById('modalTitle').textContent = 'Submit DTR';
+        document.getElementById('shift_sched_id').focus();
+    }
 
-        // Close modal when clicking outside
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.classList.remove('active');
-            }
-        }
+    function showLeaveForm() {
+        document.getElementById('actionSelection').hidden = true;
+        document.getElementById('leaveForm').hidden       = false;
+        document.getElementById('modalTitle').textContent = 'File Leave Request';
+        document.getElementById('leave_type_id').focus();
+    }
+
+    function backToSelection() { resetModal(); }
+
+    function resetModal() {
+        document.getElementById('actionSelection').hidden = false;
+        document.getElementById('dtrForm').hidden         = true;
+        document.getElementById('leaveForm').hidden       = true;
+        document.getElementById('modalTitle').textContent = 'Choose Action';
+    }
+
+    // Close on backdrop click
+    document.getElementById('dtrModal').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
     </script>
+
 </body>
 </html>

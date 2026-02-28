@@ -32,6 +32,12 @@ It provides HR teams and managers with an efficient way to monitor attendance, m
 
 ---
 
+## ♿ Accessibility
+
+ClockWise follows **WCAG 2.1 Level AA** guidelines where feasible. A full accessibility report, implementation notes, and testing checklist are available in **ACCESSIBILITY.md**.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Backend:** PHP (PDO for database interaction)
