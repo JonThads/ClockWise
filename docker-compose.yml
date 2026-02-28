@@ -1,6 +1,8 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
     ports:
       - "8080:80"
     volumes:
@@ -12,6 +14,11 @@ services:
       DB_NAME: clockwise
       DB_USER: root
       DB_PASSWORD: rootpass
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/login.php"]  # port 80 inside container
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   db:
     image: mysql:8.0
@@ -25,6 +32,20 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./clockwise.sql:/docker-entrypoint-initdb.d/clockwise.sql
+
+  tests:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.test
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./tests:/app/tests
+      - ./report:/app/report       # persist your HTML report outside the container
+    environment:
+      BASE_URL: http://app:80      # "app" is the service name — Docker resolves it internally
+    command: ["pytest", "tests/playwright", "-v", "--html=report/report.html", "--self-contained-html"]
 
 volumes:
   db_data:

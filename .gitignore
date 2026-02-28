@@ -4,3 +4,6 @@
 
 #Ignore database.php
 database.php
+
+#Ignore Playwright Report Folder
+report/
