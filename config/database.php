@@ -1,5 +1,7 @@
 <?php
 
+session_start();
+
 $host = "localhost";
 $database = "clockwise";
 $db_user = "root";

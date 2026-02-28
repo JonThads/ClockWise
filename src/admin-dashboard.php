@@ -1,11 +1,9 @@
 <?php
 require_once 'config/database.php';
-session_start();
 
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
-
 
 // Check if user is logged in and is admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
@@ -62,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -260,21 +259,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </tr>
                         </thead>
                         <tbody>
-                            <?php
-                                /* function generateUsername($firstName, $middleName, $lastName, $birthday) {
-                                    // First name initials (handles multiple first names)
-                                    $firstInitials = '';
-                                    foreach (explode(' ', trim($firstName)) as $name) {
-                                        $firstInitials .= strtolower($name[0]);
-                                    }
-
-                                    $middleInitial = $middleName ? strtolower($middleName[0]) : 'x';
-                                    $lastInitial   = strtolower($lastName[0]);
-                                    $birthYear     = date('Y', strtotime($birthday));
-
-                                    return $firstInitials . $middleInitial . $lastInitial . $birthYear;
-                                } */
-                            ?>
                             <?php foreach ($get_employees as $employees): ?>
                             <tr>
                                 <td><?= $employees['emp_id'] ?></td>
@@ -557,7 +541,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     SUM(CASE WHEN lt.leave_type_code = 'NoPay' THEN wg.leave_type_quantity ELSE 0 END) AS NoPay,
                     SUM(CASE WHEN lt.leave_type_code = 'EDU' THEN wg.leave_type_quantity ELSE 0 END) AS EDU
 
-                FROM work_groups wg
+                FROM work_group_leaves wg
                 JOIN leave_types lt 
                     ON wg.leave_type_id = lt.leave_type_id
 
