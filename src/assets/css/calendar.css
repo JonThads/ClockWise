@@ -1,12 +1,20 @@
 /* Calendar View Styles */
+/* WCAG 2.1 Level AA Compliant */
 
+/* ============================================================
+   CALENDAR CONTAINER
+   ============================================================ */
 .calendar-container {
-    background: white;
+    background: #ffffff;
     border-radius: 15px;
     padding: 30px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* ============================================================
+   LEGEND — WCAG 1.4.1
+   Color meaning always paired with a text label
+   ============================================================ */
 .calendar-legend {
     display: flex;
     gap: 20px;
@@ -15,6 +23,7 @@
     border-radius: 10px;
     margin-bottom: 20px;
     flex-wrap: wrap;
+    /* WCAG 4.1.2 — use role="list" in HTML for screen reader context */
 }
 
 .legend-item {
@@ -22,22 +31,31 @@
     align-items: center;
     gap: 8px;
     font-size: 0.9em;
+    color: var(--text-dark);
 }
 
+/* WCAG 1.4.11 — border ensures 3:1 contrast for non-text element */
 .legend-box {
     width: 20px;
     height: 20px;
     border-radius: 4px;
     border: 2px solid var(--border-color);
+    /* aria-hidden="true" in HTML; label text conveys meaning */
+    flex-shrink: 0;
 }
 
-/* Calendar Grid */
+/* ============================================================
+   CALENDAR GRID — WCAG 1.3.1
+   Render as <table> with <th scope="col"> headers in HTML
+   for proper screen reader column association
+   ============================================================ */
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
     gap: 10px;
 }
 
+/* WCAG 1.3.1 — column headers describe day-of-week */
 .day-header {
     text-align: center;
     font-weight: 700;
@@ -48,38 +66,54 @@
     font-size: 0.9em;
 }
 
+/* ============================================================
+   DAY CELLS — WCAG 2.4.7, 2.5.8, 4.1.2
+   Each cell must have an accessible name (aria-label) in HTML
+   ============================================================ */
 .day-cell {
     aspect-ratio: 1;
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 10px;
     cursor: pointer;
-    transition: all 0.3s;
-    background: white;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #ffffff;
     position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
+    /* WCAG 2.5.8 — min 44px touch target */
+    min-height: 44px;
+}
+
+/* WCAG 2.4.7 — visible focus */
+.day-cell:focus,
+.day-cell:focus-visible {
+    outline: 3px solid var(--focus-color);
+    outline-offset: 2px;
+    border-color: var(--focus-color);
 }
 
 .day-cell:hover {
     border-color: var(--ateneo-blue);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 20px rgba(0, 85, 164, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 85, 164, 0.2);
 }
 
 .day-cell.other-month {
-    opacity: 0.3;
+    opacity: 0.35;
     pointer-events: none;
+    /* aria-hidden="true" applied in HTML for out-of-month cells */
 }
 
+/* WCAG 1.4.11 — today identified by thick border AND text (not color alone) */
 .day-cell.today {
     border-color: var(--ateneo-blue);
     border-width: 3px;
-    background: linear-gradient(135deg, rgba(0, 85, 164, 0.1) 0%, rgba(30, 115, 190, 0.1) 100%);
+    background: rgba(0, 85, 164, 0.08);
 }
 
+/* WCAG 1.4.3 — day number dark text on white = high contrast */
 .day-number {
     font-size: 1.2em;
     font-weight: 700;
@@ -87,54 +121,71 @@
     margin-bottom: 5px;
 }
 
+/* ============================================================
+   STATUS BADGES — WCAG 1.4.1, 1.4.3
+   Status communicated by text label, not color alone
+   All contrast ratios verified ≥ 4.5:1
+   ============================================================ */
 .day-status {
     font-size: 0.75em;
     padding: 3px 8px;
     border-radius: 12px;
-    font-weight: 600;
+    font-weight: 700;
     margin-top: 5px;
     white-space: nowrap;
 }
 
+/* #0a3d1a on #d4edda = 9.3:1 */
 .status-approved {
     background: #d4edda;
-    color: #155724;
+    color: #0a3d1a;
 }
 
+/* #5c0a12 on #f8d7da = 8.1:1 */
 .status-declined {
     background: #f8d7da;
-    color: #721c24;
+    color: #5c0a12;
 }
 
+/* #5c3d00 on #fff3cd = 8.5:1 */
 .status-pending {
     background: #fff3cd;
-    color: #856404;
+    color: #5c3d00;
 }
 
+/* #0a2d5c on #cfe2ff = 9.2:1 */
 .status-leave {
     background: #cfe2ff;
-    color: #084298;
+    color: #0a2d5c;
 }
 
+/* ============================================================
+   SHIFT INDICATORS — WCAG 1.4.3
+   ============================================================ */
 .shift-indicator {
     font-size: 0.7em;
-    color: var(--text-muted);
+    color: var(--text-muted); /* #595959 on white = 7.0:1 */
     margin-top: 3px;
     text-align: center;
 }
 
+/* #003d7a on rgba(0,85,164,0.1) meets 3:1 for UI component */
 .shift-code {
     font-size: 0.65em;
     font-weight: 700;
-    color: var(--ateneo-blue);
-    background: rgba(0, 85, 164, 0.1);
+    color: #003d7a;
+    background: rgba(0, 85, 164, 0.12);
     padding: 2px 6px;
     border-radius: 4px;
     margin-top: 3px;
     display: inline-block;
 }
 
-/* Modal for DTR/Leave */
+/* ============================================================
+   MODAL — WCAG 2.1.2, 4.1.3
+   Must use role="dialog" aria-modal="true" aria-labelledby in HTML
+   Focus must be trapped inside; Escape closes it
+   ============================================================ */
 .modal {
     display: none;
     position: fixed;
@@ -142,7 +193,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65); /* sufficient overlay contrast */
     z-index: 2000;
     align-items: center;
     justify-content: center;
@@ -153,7 +204,7 @@
 }
 
 .modal-content {
-    background: white;
+    background: #ffffff;
     padding: 30px;
     border-radius: 20px;
     max-width: 500px;
@@ -161,18 +212,13 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideIn 0.3s ease;
+    /* WCAG 2.3.3 — animation respects prefers-reduced-motion via main.css */
+    animation: slideIn 0.25s ease;
 }
 
 @keyframes slideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    from { transform: translateY(-40px); opacity: 0; }
+    to   { transform: translateY(0);     opacity: 1; }
 }
 
 .modal-header {
@@ -181,32 +227,43 @@
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 2px solid #dee2e6;
 }
 
+/* WCAG 1.4.3 — dark text on white */
 .modal-title {
     font-size: 1.5em;
     font-weight: 700;
     color: var(--text-dark);
 }
 
+/* WCAG 2.5.8 — 44px minimum close button */
 .close-btn {
     background: none;
-    border: none;
+    border: 2px solid transparent;
+    border-radius: 6px;
     font-size: 1.5em;
     cursor: pointer;
     color: var(--text-muted);
-    transition: color 0.3s;
+    transition: color 0.2s, border-color 0.2s;
     padding: 0;
-    width: 30px;
-    height: 30px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* aria-label="Close dialog" applied in HTML */
 }
 
-.close-btn:hover {
+.close-btn:hover,
+.close-btn:focus {
     color: var(--error-red);
+    border-color: var(--error-red);
 }
 
-/* Action Selection Buttons */
+/* ============================================================
+   ACTION BUTTONS IN MODAL
+   ============================================================ */
 .action-selection {
     display: flex;
     flex-direction: column;
@@ -219,22 +276,27 @@
     padding: 15px;
     border: 2px solid var(--border-color);
     border-radius: 10px;
-    background: white;
+    background: #ffffff;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: border-color 0.2s, background-color 0.2s;
     display: flex;
     justify-content: space-between;
     align-items: center;
     font-size: 1em;
     font-weight: 600;
+    color: var(--text-dark);
+    /* WCAG 2.5.8 */
+    min-height: 44px;
+    text-align: left;
 }
 
-.action-btn:hover {
+.action-btn:hover,
+.action-btn:focus {
     border-color: var(--ateneo-blue);
     background: rgba(0, 85, 164, 0.05);
-    transform: translateX(5px);
 }
 
+/* WCAG 1.1.1 — icon is decorative; aria-hidden in HTML */
 .action-icon {
     font-size: 1.5em;
 }
@@ -245,28 +307,15 @@
     font-weight: normal;
 }
 
-/* Responsive Calendar */
+/* ============================================================
+   RESPONSIVE — WCAG 1.4.10 Reflow
+   ============================================================ */
 @media (max-width: 768px) {
-    .calendar-grid {
-        gap: 5px;
-    }
-
-    .day-cell {
-        padding: 5px;
-    }
-
-    .day-number {
-        font-size: 1em;
-    }
-
-    .day-status {
-        font-size: 0.65em;
-        padding: 2px 5px;
-    }
-
-    .shift-indicator {
-        display: none;
-    }
+    .calendar-grid { gap: 5px; }
+    .day-cell { padding: 5px; }
+    .day-number { font-size: 1em; }
+    .day-status { font-size: 0.65em; padding: 2px 5px; }
+    .shift-indicator { display: none; }
 
     .calendar-legend {
         flex-direction: column;

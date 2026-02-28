@@ -11,7 +11,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (!empty($username) && !empty($password)) {
         try {
-            // Fetch user record (adjust table name if needed: roles vs user_roles)
             $sql = "SELECT 
                         e.emp_id,
                         e.emp_username,
@@ -22,142 +21,166 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     JOIN user_roles ur ON e.role_id = ur.role_id
                     WHERE e.emp_username = :username
                     LIMIT 1";
-                    
             $stmt = $pdo->prepare($sql);
             $stmt->execute([':username' => $username]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if ($user && password_verify($password, $user['emp_password'])) {
-                // Set session
                 $_SESSION['user_id']    = $user['emp_id'];
                 $_SESSION['username']   = $user['emp_username'];
                 $_SESSION['name']       = $user['emp_first_name'];
-                $_SESSION['role']       = strtolower($user['role_name']); // e.g. "admin", "user"
+                $_SESSION['role']       = strtolower($user['role_name']);
                 $_SESSION['login_time'] = time();
 
-                // Remember me
                 if ($remember) {
                     setcookie('remembered_user', $username, time() + (86400 * 30), '/');
                 }
 
-                // Redirect based on role
                 if ($_SESSION['role'] === 'admin') {
                     header('Location: admin-dashboard.php');
                 } elseif ($_SESSION['role'] === 'user') {
                     header('Location: user-dashboard.php');
                 } else {
-                    // fallback if role is unknown
                     header('Location: dashboard.php');
                 }
                 exit();
-
             } else {
-                $error = 'Invalid Username or Password';
+                $error = 'Invalid username or password. Please try again.';
             }
         } catch (PDOException $e) {
-            $error = 'Database Error: ' . $e->getMessage();
+            $error = 'A system error occurred. Please try again later.';
         }
     } else {
-        $error = 'Please enter both Username and Password';
+        $error = 'Please enter both username and password.';
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ClockWise - Login</title>
+    <!-- WCAG 2.4.2 — Descriptive page title -->
+    <title>Login – ClockWise DTR & Leave Management</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/login.css">
 </head>
 <body>
+    <!-- WCAG 2.4.1 — Skip link to bypass branding panel -->
+    <a href="#login-form" class="skip-link">Skip to login form</a>
+
     <div class="login-container">
-        <!-- Left Side - Branding -->
-        <div class="login-left">
+        <!-- Left Side — Branding (decorative, hidden from assistive tech flow) -->
+        <div class="login-left" aria-hidden="true">
             <div class="logo-section">
-                <div class="logo">⏰</div>
-                <h1 class="brand-name">ClockWise</h1>
-                <p class="tagline">Daily Time Record & Leave Management System</p>
+                <!-- WCAG 1.1.1 — decorative emoji, aria-hidden -->
+                <div class="logo" aria-hidden="true">⏰</div>
+                <p class="brand-name">ClockWise</p>
+                <p class="tagline">Daily Time Record &amp; Leave Management System</p>
             </div>
 
-            <div class="features-list">
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
+            <ul class="features-list" aria-hidden="true">
+                <li class="feature-item">
+                    <!-- WCAG 1.1.1 — decorative icon -->
+                    <span class="feature-icon" aria-hidden="true">✓</span>
                     <span>Easy DTR submission and tracking</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
+                </li>
+                <li class="feature-item">
+                    <span class="feature-icon" aria-hidden="true">✓</span>
                     <span>Seamless leave request management</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
+                </li>
+                <li class="feature-item">
+                    <span class="feature-icon" aria-hidden="true">✓</span>
                     <span>Real-time approval workflow</span>
-                </div>
-                <div class="feature-item">
-                    <span class="feature-icon">✓</span>
+                </li>
+                <li class="feature-item">
+                    <span class="feature-icon" aria-hidden="true">✓</span>
                     <span>Comprehensive reporting tools</span>
-                </div>
-            </div>
+                </li>
+            </ul>
 
-            <div class="footer-motto">
-                "Ad Majorem Dei Gloriam"
-            </div>
+            <p class="footer-motto" aria-hidden="true">"Ad Majorem Dei Gloriam"</p>
         </div>
 
-        <!-- Right Side - Login Form -->
+        <!-- Right Side — Login Form -->
         <div class="login-right">
             <div class="login-form-container">
                 <div class="form-header">
-                    <h2 class="form-title">Welcome Back</h2>
-                    <p class="form-subtitle">Please login to your account</p>
+                    <!-- WCAG 1.3.1 — heading hierarchy -->
+                    <h1 class="form-title">Welcome Back</h1>
+                    <p class="form-subtitle">Please log in to your account</p>
                 </div>
 
+                <!-- WCAG 4.1.3 — error uses role="alert" for immediate announcement -->
                 <?php if ($error): ?>
-                    <div class="error-message"><?= htmlspecialchars($error) ?></div>
+                    <div class="error-message" role="alert" aria-live="assertive">
+                        <!-- WCAG 1.4.1 — error not color alone; has border + bold weight -->
+                        <span aria-hidden="true">⚠ </span><?= htmlspecialchars($error) ?>
+                    </div>
                 <?php endif; ?>
 
-                <form method="POST" action="login.php">
+                <!-- WCAG 3.3.2 — note about required fields -->
+                <p class="sr-only" id="required-note">All fields marked with an asterisk (*) are required.</p>
+
+                <form method="POST" action="login.php" id="login-form"
+                      aria-describedby="required-note" novalidate>
                     <div class="form-group">
-                        <label class="form-label" for="username">Username</label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            name="username" 
-                            class="form-input" 
+                        <!-- WCAG 1.3.1 / 3.3.2 — explicit <label> associated by for/id -->
+                        <label class="form-label" for="username">
+                            Username <span class="required" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="form-input"
                             placeholder="Enter your username"
                             value="<?= htmlspecialchars($rememberedUser) ?>"
+                            autocomplete="username"
                             required
+                            aria-required="true"
+                            <?= $error ? 'aria-invalid="true"' : '' ?>
                         >
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="password">Password</label>
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            class="form-input" 
+                        <label class="form-label" for="password">
+                            Password <span class="required" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
                             placeholder="Enter your password"
+                            autocomplete="current-password"
                             required
+                            aria-required="true"
+                            <?= $error ? 'aria-invalid="true"' : '' ?>
                         >
                     </div>
 
                     <div class="form-options">
+                        <!-- WCAG 1.3.5 — autocomplete helps users -->
                         <label class="remember-me">
-                            <input type="checkbox" name="remember" <?= $rememberedUser ? 'checked' : '' ?>>
+                            <input type="checkbox" name="remember"
+                                   <?= $rememberedUser ? 'checked' : '' ?>>
                             <span>Remember me</span>
                         </label>
-                        <a href="#" class="forgot-password">Forgot Password?</a>
+                        <!-- WCAG 2.4.4 — link text describes its purpose -->
+                        <a href="forgot-password.php" class="forgot-password">
+                            Forgot password?
+                        </a>
                     </div>
 
-                    <button type="submit" class="login-btn">Login</button>
+                    <button type="submit" class="login-btn">
+                        Log In
+                    </button>
                 </form>
 
-                <div class="footer-text">
-                    <p>"Kapag may alitaptap, tumingin sa mga ulap"<br>
-                </div>
+                <p class="footer-text">
+                    "Kapag may alitaptap, tumingin sa mga ulap"
+                </p>
             </div>
         </div>
     </div>
