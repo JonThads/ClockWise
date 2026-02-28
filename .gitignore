@@ -2,8 +2,11 @@
 *.sql
 *.txt
 
-#Ignore database.php
+#Ignore specific files
 database.php
 
-#Ignore Playwright Report Folder
+#Ignore folders
 report/
+venv/
+.pytest_cache/
+__pycache__/
