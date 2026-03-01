@@ -4,7 +4,6 @@
 *.env
 
 #Ignore specific files
-database.php
 
 #Ignore folders
 report/
