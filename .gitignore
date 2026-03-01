@@ -1,6 +1,7 @@
 #Ignore all SQL and TXT files
 *.sql
 *.txt
+*.env
 
 #Ignore specific files
 database.php
