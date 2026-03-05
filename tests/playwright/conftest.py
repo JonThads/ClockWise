@@ -2,6 +2,9 @@ import pytest
 from playwright.sync_api import sync_playwright
 import os
 
+# -----------------------------
+# Browser & Page Fixtures
+# -----------------------------
 @pytest.fixture(scope="session")
 def browser():
     with sync_playwright() as p:

@@ -1,9 +1,10 @@
 #Ignore all SQL and TXT files
 *.sql
 *.txt
+*.env
+*.png
 
 #Ignore specific files
-database.php
 
 #Ignore folders
 report/
