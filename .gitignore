@@ -2,6 +2,7 @@
 *.sql
 *.txt
 *.env
+*.png
 
 #Ignore specific files
 
