@@ -1,101 +1,181 @@
 <?php
-session_start();
+require_once 'config/database.php';
 
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     header('Location: login.php');
     exit();
 }
 
-$employeeId = $_GET['id'] ?? null;
-if (!$employeeId) {
-    header('Location: admin-dashboard.php#employees');
+$empId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if (!$empId) {
+    header('Location: admin-dashboard.php?section=employees');
     exit();
 }
-
-// In production, fetch from DB. Sample data used here.
-$employee = [
-    'id'         => $employeeId,
-    'first_name' => 'Jon',
-    'last_name'  => 'Laguitao',
-    'username'   => 'jlaguitao',
-    'email'      => 'jlaguitao@company.com',
-    'department' => 'IT',
-    'work_group' => 'Rank and File',
-    'shift'      => 'Morning Shift',
-    'role'       => 'employee',
-];
 
 $message     = '';
 $messageType = '';
 $errors      = [];
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $firstName  = trim($_POST['first_name']  ?? '');
-    $lastName   = trim($_POST['last_name']   ?? '');
-    $username   = trim($_POST['username']    ?? '');
-    $email      = trim($_POST['email']       ?? '');
-    $department = $_POST['department']       ?? '';
-    $workGroup  = $_POST['work_group']       ?? '';
-    $shift      = $_POST['shift']            ?? '';
-    $role       = $_POST['role']             ?? 'employee';
-    $newPass    = $_POST['password']         ?? '';
-
-    if (empty($firstName))  { $errors['first_name']  = 'First name is required.'; }
-    if (empty($lastName))   { $errors['last_name']   = 'Last name is required.'; }
-    if (empty($username))   { $errors['username']    = 'Username is required.'; }
-    if (empty($department)) { $errors['department']  = 'Department is required.'; }
-    if (empty($workGroup))  { $errors['work_group']  = 'Work group is required.'; }
-    if (empty($shift))      { $errors['shift']       = 'Shift schedule is required.'; }
-    if (!empty($newPass) && strlen($newPass) < 8) {
-        $errors['password'] = 'New password must be at least 8 characters.';
-    }
-
-    if (empty($errors)) {
-        // UPDATE employees SET ... WHERE emp_id = :id
-        $message     = 'Employee updated successfully!';
-        $messageType = 'success';
-        header('refresh:2;url=admin-dashboard.php#employees');
-    } else {
-        $message     = 'Please correct the errors below.';
-        $messageType = 'error';
+// ── Helper: fetch dropdown options safely ─────────────────────────────────────
+function getOptions(PDO $pdo, string $sql): array {
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return [];
     }
 }
 
-$departments = ['IT', 'HR', 'Engineering', 'Accounting', 'Marketing', 'Operations'];
-$workGroups  = ['Executive', 'Supervisor', 'Rank and File'];
-$shifts      = ['Morning Shift', 'Afternoon Shift', 'Night Shift', 'Flexible'];
-$roles       = [
-    'admin'      => 'Administrator',
-    'executive'  => 'Executive',
-    'supervisor' => 'Supervisor',
-    'employee'   => 'Employee',
-];
+// ── Load dropdowns ────────────────────────────────────────────────────────────
+$workGroups     = getOptions($pdo, "SELECT work_group_id, work_group_name FROM work_groups ORDER BY work_group_id");
+$roles          = getOptions($pdo, "SELECT role_id, role_name FROM user_roles ORDER BY role_id");
+$departments    = getOptions($pdo, "SELECT dept_id, dept_name FROM departments ORDER BY dept_id");
+$shiftSchedules = getOptions($pdo, "SELECT shift_sched_id, shift_sched_name, shift_sched_code FROM shift_schedules ORDER BY shift_sched_id");
+
+// ── Fetch existing employee record ────────────────────────────────────────────
+$stmt = $pdo->prepare("
+    SELECT emp_id, emp_first_name, emp_middle_name, emp_last_name,
+           emp_birthday, emp_email, emp_username,
+           dept_id, work_group_id, role_id, shift_sched_id
+    FROM   employees
+    WHERE  emp_id = ?
+");
+$stmt->execute([$empId]);
+$employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$employee) {
+    header('Location: admin-dashboard.php?section=employees&msg=Employee+not+found.&mtype=error');
+    exit();
+}
+
+// ── POST handler ──────────────────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $firstName  = trim($_POST['first_name']  ?? '');
+    $middleName = trim($_POST['middle_name'] ?? '');
+    $lastName   = trim($_POST['last_name']   ?? '');
+    $birthday   = trim($_POST['birthday']    ?? '');
+    $email      = trim($_POST['email']       ?? '');
+    $username   = trim($_POST['username']    ?? '');
+    $newPass    = $_POST['password']         ?? '';
+    $department = (int)($_POST['department'] ?? 0);
+    $workGroup  = (int)($_POST['work_group'] ?? 0);
+    $userRole   = (int)($_POST['user_role']  ?? 0);
+    $shift      = (int)($_POST['shift']      ?? 0);
+
+    if (empty($firstName))  { $errors['first_name']  = 'First name is required.'; }
+    if (empty($middleName)) { $errors['middle_name'] = 'Middle name is required.'; }
+    if (empty($lastName))   { $errors['last_name']   = 'Last name is required.'; }
+    if (empty($birthday))   { $errors['birthday']    = 'Birthday is required.'; }
+    if (empty($username))   { $errors['username']    = 'Username is required.'; }
+    if (!empty($newPass) && strlen($newPass) < 8) {
+        $errors['password'] = 'New password must be at least 8 characters.';
+    }
+    if (!$department) { $errors['department'] = 'Department is required.'; }
+    if (!$workGroup)  { $errors['work_group'] = 'Work group is required.'; }
+    if (!$userRole)   { $errors['user_role']  = 'Role is required.'; }
+    if (!$shift)      { $errors['shift']      = 'Shift schedule is required.'; }
+
+    if (empty($errors)) {
+        // Duplicate username check (excluding self)
+        $check = $pdo->prepare("SELECT emp_id FROM employees WHERE emp_username = ? AND emp_id != ?");
+        $check->execute([$username, $empId]);
+        if ($check->fetch()) {
+            $errors['username'] = 'This username is already taken by another employee.';
+        }
+    }
+
+    if (empty($errors)) {
+        try {
+            if (!empty($newPass)) {
+                $hashedPassword = password_hash($newPass, PASSWORD_DEFAULT);
+                $pdo->prepare("
+                    UPDATE employees
+                    SET    emp_first_name  = ?,
+                           emp_middle_name = ?,
+                           emp_last_name   = ?,
+                           emp_birthday    = ?,
+                           emp_email       = ?,
+                           emp_username    = ?,
+                           emp_password    = ?,
+                           dept_id         = ?,
+                           work_group_id   = ?,
+                           role_id         = ?,
+                           shift_sched_id  = ?
+                    WHERE  emp_id = ?
+                ")->execute([
+                    $firstName, $middleName, $lastName, $birthday,
+                    $email, $username, $hashedPassword,
+                    $department, $workGroup, $userRole, $shift,
+                    $empId
+                ]);
+            } else {
+                $pdo->prepare("
+                    UPDATE employees
+                    SET    emp_first_name  = ?,
+                           emp_middle_name = ?,
+                           emp_last_name   = ?,
+                           emp_birthday    = ?,
+                           emp_email       = ?,
+                           emp_username    = ?,
+                           dept_id         = ?,
+                           work_group_id   = ?,
+                           role_id         = ?,
+                           shift_sched_id  = ?
+                    WHERE  emp_id = ?
+                ")->execute([
+                    $firstName, $middleName, $lastName, $birthday,
+                    $email, $username,
+                    $department, $workGroup, $userRole, $shift,
+                    $empId
+                ]);
+            }
+
+            $qs = http_build_query(['msg' => 'Employee updated successfully.', 'mtype' => 'success', 'section' => 'employees']);
+            header("Location: admin-dashboard.php?$qs");
+            exit();
+        } catch (PDOException $e) {
+            $message     = 'A database error occurred. Please try again.';
+            $messageType = 'error';
+        }
+    } else {
+        $message     = 'Please correct the errors below.';
+        $messageType = 'error';
+        // Reflect entered values back
+        $employee['emp_first_name']  = $firstName;
+        $employee['emp_middle_name'] = $middleName;
+        $employee['emp_last_name']   = $lastName;
+        $employee['emp_birthday']    = $birthday;
+        $employee['emp_email']       = $email;
+        $employee['emp_username']    = $username;
+        $employee['dept_id']         = $department;
+        $employee['work_group_id']   = $workGroup;
+        $employee['role_id']         = $userRole;
+        $employee['shift_sched_id']  = $shift;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- WCAG 2.4.2 — descriptive title including employee context -->
-    <title>Edit Employee – <?= htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']) ?> – ClockWise Admin</title>
+    <title>Edit Employee – <?= htmlspecialchars($employee['emp_first_name'] . ' ' . $employee['emp_last_name']) ?> – ClockWise Admin</title>
     <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="assets/css/form.css">
 </head>
 <body class="form-page">
-    <!-- WCAG 2.4.1 -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <div class="form-page-container" id="main-content">
 
-        <!-- WCAG 2.4.8 — breadcrumb -->
-        <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb">
-                <li><a href="admin-dashboard.php">Dashboard</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><a href="admin-dashboard.php#employees">Employees</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><span aria-current="page">Edit Employee</span></li>
-            </ol>
+        <!-- WCAG 2.4.8 — Breadcrumb navigation with landmark + aria-current -->
+        <nav aria-label="Breadcrumb" class="breadcrumb">
+            <a href="admin-dashboard.php">Dashboard</a>
+            <span>>>></span>
+            <a href="admin-dashboard.php?section=employees">Employees</a>
+            <span>>>></span>
+            <span aria-current="page">Edit Employee</span>
         </nav>
 
         <main>
@@ -105,12 +185,10 @@ $roles       = [
                         <span aria-hidden="true">✏️ </span>Edit Employee
                     </h1>
                     <p class="form-card-subtitle">
-                        Updating:
-                        <strong><?= htmlspecialchars($employee['first_name'] . ' ' . $employee['last_name']) ?></strong>
+                        Updating: <strong><?= htmlspecialchars($employee['emp_first_name'] . ' ' . $employee['emp_last_name']) ?></strong>
                     </p>
                 </div>
 
-                <!-- WCAG 4.1.3 — live region -->
                 <?php if ($message): ?>
                     <div class="alert alert-<?= $messageType ?>"
                          role="<?= $messageType === 'error' ? 'alert' : 'status' ?>"
@@ -125,7 +203,7 @@ $roles       = [
                 </p>
 
                 <form method="POST"
-                      action="edit-employee.php?id=<?= (int)$employeeId ?>"
+                      action="edit-employee.php?id=<?= $empId ?>"
                       aria-describedby="required-note" novalidate>
 
                     <!-- ── Personal Information ── -->
@@ -133,32 +211,58 @@ $roles       = [
                         <legend class="form-section-title">Personal Information</legend>
 
                         <div class="form-row">
-                            <?php foreach (['first_name' => 'First Name', 'last_name' => 'Last Name'] as $f => $lbl): ?>
+                            <?php
+                            $nameFields = [
+                                'first_name'  => ['First Name',  'emp_first_name'],
+                                'middle_name' => ['Middle Name', 'emp_middle_name'],
+                                'last_name'   => ['Last Name',   'emp_last_name'],
+                            ];
+                            foreach ($nameFields as $field => [$label, $dbKey]): ?>
                             <div class="form-group">
-                                <label class="form-label" for="<?= $f ?>">
-                                    <?= $lbl ?> <span class="required" aria-hidden="true">*</span>
+                                <label class="form-label" for="<?= $field ?>">
+                                    <?= $label ?> <span class="required" aria-hidden="true">*</span>
                                 </label>
-                                <input type="text" id="<?= $f ?>" name="<?= $f ?>"
+                                <input type="text" id="<?= $field ?>" name="<?= $field ?>"
                                        class="form-input"
-                                       value="<?= htmlspecialchars($_POST[$f] ?? $employee[$f]) ?>"
+                                       value="<?= htmlspecialchars($employee[$dbKey] ?? '') ?>"
                                        required aria-required="true"
-                                       <?= isset($errors[$f]) ? "aria-invalid=\"true\" aria-describedby=\"{$f}-error\"" : '' ?>>
-                                <?php if (isset($errors[$f])): ?>
-                                    <p id="<?= $f ?>-error" class="field-error" role="alert">
-                                        <?= htmlspecialchars($errors[$f]) ?>
+                                       <?= isset($errors[$field]) ? "aria-invalid=\"true\" aria-describedby=\"{$field}-error\"" : '' ?>>
+                                <?php if (isset($errors[$field])): ?>
+                                    <p id="<?= $field ?>-error" class="field-error" role="alert">
+                                        <?= htmlspecialchars($errors[$field]) ?>
                                     </p>
                                 <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="email">Email Address</label>
-                            <input type="email" id="email" name="email"
-                                   class="form-input"
-                                   value="<?= htmlspecialchars($_POST['email'] ?? $employee['email']) ?>"
-                                   placeholder="employee@company.com"
-                                   autocomplete="email">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="birthday">
+                                    Birthday <span class="required" aria-hidden="true">*</span>
+                                </label>
+                                <input type="date" id="birthday" name="birthday"
+                                       class="form-input"
+                                       value="<?= htmlspecialchars($employee['emp_birthday'] ?? '') ?>"
+                                       required aria-required="true"
+                                       <?= isset($errors['birthday']) ? 'aria-invalid="true" aria-describedby="birthday-error"' : '' ?>>
+                                <?php if (isset($errors['birthday'])): ?>
+                                    <p id="birthday-error" class="field-error" role="alert">
+                                        <?= htmlspecialchars($errors['birthday']) ?>
+                                    </p>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label" for="email">Email Address</label>
+                                <input type="email" id="email" name="email"
+                                       class="form-input"
+                                       value="<?= htmlspecialchars($employee['emp_email'] ?? '') ?>"
+                                       placeholder="employee@company.com"
+                                       autocomplete="email"
+                                       aria-describedby="email-help">
+                                <p id="email-help" class="form-help">Optional — for notifications and password reset.</p>
+                            </div>
                         </div>
                     </fieldset>
 
@@ -173,7 +277,7 @@ $roles       = [
                                 </label>
                                 <input type="text" id="username" name="username"
                                        class="form-input"
-                                       value="<?= htmlspecialchars($_POST['username'] ?? $employee['username']) ?>"
+                                       value="<?= htmlspecialchars($employee['emp_username'] ?? '') ?>"
                                        autocomplete="username"
                                        required aria-required="true"
                                        <?= isset($errors['username']) ? 'aria-invalid="true" aria-describedby="username-error"' : '' ?>>
@@ -193,7 +297,7 @@ $roles       = [
                                        aria-describedby="password-help<?= isset($errors['password']) ? ' password-error' : '' ?>"
                                        <?= isset($errors['password']) ? 'aria-invalid="true"' : '' ?>>
                                 <p id="password-help" class="form-help">
-                                    Only fill this if you want to change the password. Minimum 8 characters.
+                                    Only fill this in to change the password. Minimum 8 characters.
                                 </p>
                                 <?php if (isset($errors['password'])): ?>
                                     <p id="password-error" class="field-error" role="alert">
@@ -203,50 +307,8 @@ $roles       = [
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label class="form-label" for="role">
-                                Role <span class="required" aria-hidden="true">*</span>
-                            </label>
-                            <select id="role" name="role" class="form-select"
-                                    required aria-required="true">
-                                <?php foreach ($roles as $val => $lbl): ?>
-                                    <option value="<?= $val ?>"
-                                        <?= ($_POST['role'] ?? $employee['role']) === $val ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($lbl) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                    </fieldset>
-
-                    <!-- ── Employment Information ── -->
-                    <fieldset class="form-section">
-                        <legend class="form-section-title">Employment Information</legend>
-
                         <div class="form-row">
-                            <div class="form-group">
-                                <label class="form-label" for="department">
-                                    Department <span class="required" aria-hidden="true">*</span>
-                                </label>
-                                <select id="department" name="department"
-                                        class="form-select"
-                                        required aria-required="true"
-                                        <?= isset($errors['department']) ? 'aria-invalid="true" aria-describedby="department-error"' : '' ?>>
-                                    <option value="">Select Department</option>
-                                    <?php foreach ($departments as $dept): ?>
-                                        <option value="<?= $dept ?>"
-                                            <?= ($_POST['department'] ?? $employee['department']) === $dept ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($dept) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                                <?php if (isset($errors['department'])): ?>
-                                    <p id="department-error" class="field-error" role="alert">
-                                        <?= htmlspecialchars($errors['department']) ?>
-                                    </p>
-                                <?php endif; ?>
-                            </div>
-
+                            <!-- Work Group -->
                             <div class="form-group">
                                 <label class="form-label" for="work_group">
                                     Work Group <span class="required" aria-hidden="true">*</span>
@@ -254,21 +316,77 @@ $roles       = [
                                 <select id="work_group" name="work_group"
                                         class="form-select"
                                         required aria-required="true"
-                                        <?= isset($errors['work_group']) ? 'aria-invalid="true" aria-describedby="work_group-error"' : '' ?>>
+                                        aria-describedby="work_group-help<?= isset($errors['work_group']) ? ' work_group-error' : '' ?>"
+                                        <?= isset($errors['work_group']) ? 'aria-invalid="true"' : '' ?>>
                                     <option value="">Select Work Group</option>
-                                    <?php foreach ($workGroups as $grp): ?>
-                                        <option value="<?= $grp ?>"
-                                            <?= ($_POST['work_group'] ?? $employee['work_group']) === $grp ? 'selected' : '' ?>>
-                                            <?= htmlspecialchars($grp) ?>
+                                    <?php foreach ($workGroups as $wg): ?>
+                                        <option value="<?= $wg['work_group_id'] ?>"
+                                            <?= $employee['work_group_id'] == $wg['work_group_id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($wg['work_group_name']) ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
+                                <p id="work_group-help" class="form-help">Determines the working rank of the employee.</p>
                                 <?php if (isset($errors['work_group'])): ?>
                                     <p id="work_group-error" class="field-error" role="alert">
                                         <?= htmlspecialchars($errors['work_group']) ?>
                                     </p>
                                 <?php endif; ?>
                             </div>
+
+                            <!-- Role -->
+                            <div class="form-group">
+                                <label class="form-label" for="user_role">
+                                    Role <span class="required" aria-hidden="true">*</span>
+                                </label>
+                                <select id="user_role" name="user_role"
+                                        class="form-select"
+                                        required aria-required="true"
+                                        aria-describedby="user_role-help<?= isset($errors['user_role']) ? ' user_role-error' : '' ?>"
+                                        <?= isset($errors['user_role']) ? 'aria-invalid="true"' : '' ?>>
+                                    <option value="">Select Role</option>
+                                    <?php foreach ($roles as $role): ?>
+                                        <option value="<?= $role['role_id'] ?>"
+                                            <?= $employee['role_id'] == $role['role_id'] ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($role['role_name']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <p id="user_role-help" class="form-help">Determines access level and permissions.</p>
+                                <?php if (isset($errors['user_role'])): ?>
+                                    <p id="user_role-error" class="field-error" role="alert">
+                                        <?= htmlspecialchars($errors['user_role']) ?>
+                                    </p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- ── Employment Information ── -->
+                    <fieldset class="form-section">
+                        <legend class="form-section-title">Employment Information</legend>
+
+                        <div class="form-group">
+                            <label class="form-label" for="department">
+                                Department <span class="required" aria-hidden="true">*</span>
+                            </label>
+                            <select id="department" name="department"
+                                    class="form-select"
+                                    required aria-required="true"
+                                    <?= isset($errors['department']) ? 'aria-invalid="true" aria-describedby="department-error"' : '' ?>>
+                                <option value="">Select Department</option>
+                                <?php foreach ($departments as $dept): ?>
+                                    <option value="<?= $dept['dept_id'] ?>"
+                                        <?= $employee['dept_id'] == $dept['dept_id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($dept['dept_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <?php if (isset($errors['department'])): ?>
+                                <p id="department-error" class="field-error" role="alert">
+                                    <?= htmlspecialchars($errors['department']) ?>
+                                </p>
+                            <?php endif; ?>
                         </div>
 
                         <div class="form-group">
@@ -280,10 +398,10 @@ $roles       = [
                                     required aria-required="true"
                                     <?= isset($errors['shift']) ? 'aria-invalid="true" aria-describedby="shift-error"' : '' ?>>
                                 <option value="">Select Shift</option>
-                                <?php foreach ($shifts as $s): ?>
-                                    <option value="<?= $s ?>"
-                                        <?= ($_POST['shift'] ?? $employee['shift']) === $s ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($s) ?>
+                                <?php foreach ($shiftSchedules as $s): ?>
+                                    <option value="<?= $s['shift_sched_id'] ?>"
+                                        <?= $employee['shift_sched_id'] == $s['shift_sched_id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($s['shift_sched_code'] . ' – ' . $s['shift_sched_name']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
@@ -296,7 +414,7 @@ $roles       = [
                     </fieldset>
 
                     <div class="form-actions">
-                        <a href="admin-dashboard.php#employees" class="btn btn-secondary">Cancel</a>
+                        <a href="admin-dashboard.php?section=employees" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Update Employee</button>
                     </div>
                 </form>

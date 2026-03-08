@@ -956,7 +956,7 @@ foreach ($get_employees as $emp) {
                             <td><?= htmlspecialchars($lt['leave_type_name']) ?></td>
                             <td><?= htmlspecialchars($lt['leave_type_code']) ?></td>
                             <td>
-                                <a href="edit-leave_type.php?id=<?= (int)$lt['leave_type_id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                                <a href="edit-leave-type.php?id=<?= (int)$lt['leave_type_id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
                                 <form method="POST" style="display:inline;"
                                       onsubmit="return confirmDelete(event, '<?= htmlspecialchars($lt['leave_type_name'], ENT_QUOTES) ?> leave type')">
                                     <input type="hidden" name="action"        value="delete_leave_type">
@@ -998,7 +998,7 @@ foreach ($get_employees as $emp) {
                             <td><?= htmlspecialchars($shift['start_time']) ?></td>
                             <td><?= htmlspecialchars($shift['end_time']) ?></td>
                             <td>
-                                <a href="edit-shift.php?id=<?= (int)$shift['shift_sched_id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                                <a href="edit-shift-schedule.php?id=<?= (int)$shift['shift_sched_id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
                                 <form method="POST" style="display:inline;"
                                       onsubmit="return confirmDelete(event, '<?= htmlspecialchars($shift['shift_sched_name'], ENT_QUOTES) ?> shift')">
                                     <input type="hidden" name="action"         value="delete_shift">
