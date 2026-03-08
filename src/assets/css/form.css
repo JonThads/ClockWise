@@ -259,22 +259,32 @@ input[type="file"] {
 
 /* ============================================================
    BREADCRUMB — WCAG 2.4.8, 4.1.2
-   Use <nav aria-label="Breadcrumb"> and aria-current="page" in HTML
+   Uses <nav class="breadcrumb" aria-label="Breadcrumb"> with plain
+   <a> tags and a <span aria-current="page"> for the current page.
+   No <ol>/<li> needed — separators injected purely via CSS ::before.
    ============================================================ */
 .breadcrumb {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    align-items: center;
+    gap: 0;
     margin-bottom: 20px;
     font-size: 0.9em;
-    align-items: center;
+}
+
+/* Separator before every link or span that follows another element */
+.breadcrumb a + a::before,
+.breadcrumb a + span::before {
+    content: '›';
+    padding: 0 8px;
+    color: var(--text-muted);
+    speak: none; /* Decorative — not announced by screen readers */
 }
 
 .breadcrumb a {
     color: var(--ateneo-blue);
     text-decoration: underline; /* WCAG 1.4.1 */
-    /* WCAG 2.5.8 — padding enlarges target */
-    padding: 4px 2px;
+    padding: 4px 2px; /* WCAG 2.5.8 — enlarges tap target */
 }
 
 .breadcrumb a:hover,
@@ -283,9 +293,10 @@ input[type="file"] {
     text-decoration: underline;
 }
 
-.breadcrumb-separator {
+/* Current page — not a link, visually distinct */
+.breadcrumb span[aria-current="page"] {
     color: var(--text-muted);
-    /* aria-hidden="true" applied in HTML */
+    padding: 4px 2px;
 }
 
 /* ============================================================

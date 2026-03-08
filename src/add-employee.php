@@ -116,15 +116,13 @@ $shiftSchedules   = getOptions($pdo, "SELECT shift_sched_id, shift_sched_name, s
 
     <div class="form-page-container" id="main-content">
 
-        <!-- WCAG 2.4.8 — breadcrumb landmark -->
-        <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb">
-                <li><a href="admin-dashboard.php">Dashboard</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><a href="admin-dashboard.php#employees">Employees</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><span aria-current="page">Add Employee</span></li>
-            </ol>
+        <!-- WCAG 2.4.8 — Breadcrumb navigation with landmark + aria-current -->
+        <nav aria-label="Breadcrumb" class="breadcrumb">
+            <a href="admin-dashboard.php">Dashboard</a>
+            <span>>>></span>
+            <a href="admin-dashboard.php?section=employees">Employees</a>
+            <span>>>></span>
+            <span aria-current="page">Add Employee</span>
         </nav>
 
         <main>
