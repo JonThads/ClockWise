@@ -5,7 +5,7 @@
 *.png
 
 #Ignore specific files
-src/config/credentials.json
+credentials.json
 
 #Ignore folders
 report/
