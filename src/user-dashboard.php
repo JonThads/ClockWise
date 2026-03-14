@@ -822,7 +822,7 @@ $pendingCount = count($pendingDTRApprovals) + count($pendingLeaveApprovals);
                     You have a <strong>pending Leave request</strong> for this date.
                 </p>
                 <form method="POST">
-                    <input type="hidden" name="action"        value="cancel_leave">
+                    <input type="hidden" name="action" value="cancel_leave">
                     <input type="hidden" name="leave_rec_id"  id="cancelLeaveId">
                     <button type="submit" class="btn btn-danger" style="width:100%;"
                             onclick="return confirm('Cancel this leave request?');">
