@@ -5,6 +5,7 @@
 *.png
 
 #Ignore specific files
+credentials.json
 
 #Ignore folders
 report/

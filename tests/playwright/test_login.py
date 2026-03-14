@@ -21,7 +21,7 @@ def test_admin_login_success(page, base_url):
 
 def test_user_rnf_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}login.php")
+    page.goto(f"{base_url}/login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("jklo1980")
@@ -40,7 +40,7 @@ def test_user_rnf_login_success(page, base_url):
 
 def test_user_supervisory_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}login.php")
+    page.goto(f"{base_url}/login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("kmasagi1993")
@@ -78,7 +78,7 @@ def test_user_managerial_login_success(page, base_url):
 
 def test_user_executive_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}login.php")
+    page.goto(f"{base_url}/login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("kmja1983")
@@ -97,7 +97,7 @@ def test_user_executive_login_success(page, base_url):
 
 def test_user_administrative_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}login.php")
+    page.goto(f"{base_url}/login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("admin1990")
@@ -116,7 +116,7 @@ def test_user_administrative_login_success(page, base_url):
 
 def test_user_board_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}login.php")
+    page.goto(f"{base_url}/login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("jgmontes1990")

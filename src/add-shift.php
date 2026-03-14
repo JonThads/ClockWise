@@ -56,15 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <div class="form-page-container" id="main-content">
 
-        <!-- WCAG 2.4.8 — breadcrumb landmark -->
-        <nav aria-label="Breadcrumb">
-            <ol class="breadcrumb">
-                <li><a href="admin-dashboard.php">Dashboard</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><a href="admin-dashboard.php#shifts">Shift Schedules</a></li>
-                <li aria-hidden="true"><span class="breadcrumb-separator">›</span></li>
-                <li><span aria-current="page">Add Shift</span></li>
-            </ol>
+        <!-- WCAG 2.4.8 — Breadcrumb navigation with landmark + aria-current -->
+        <nav aria-label="Breadcrumb" class="breadcrumb">
+            <a href="admin-dashboard.php">Dashboard</a>
+            <span>>>></span>
+            <a href="admin-dashboard.php?section=shifts">Shift Schedules</a>
+            <span>>>></span>
+            <span aria-current="page">Add Shift Schedule</span>
         </nav>
 
         <main>

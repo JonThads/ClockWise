@@ -11,14 +11,15 @@ services:
       - db
     environment:
       DB_HOST: db
-      DB_NAME: clockwise
-      DB_USER: root
+      DB_DATABASE: clockwise
+      DB_USERNAME: root
       DB_PASSWORD: rootpass
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/login.php"]  # port 80 inside container
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s      # check every 15s
+      timeout: 10s       # give each check 10s to respond
+      retries: 5         # try up to 5 times
+      start_period: 30s  # give the container 30s to boot
 
   db:
     image: mysql:8.0
@@ -43,9 +44,13 @@ services:
     volumes:
       - ./tests:/app/tests
       - ./report:/app/report       # persist your HTML report outside the container
+      - ./src/config:/app/config   # if you have any config files needed for tests
     environment:
-      BASE_URL: http://app:80      # "app" is the service name — Docker resolves it internally
-    command: ["pytest", "tests/playwright", "-v", "--html=report/report.html", "--self-contained-html"]
+      BASE_URL: http://app
+    command: [
+      "sh", "-c",
+      "until curl -sf http://app/login.php; do echo 'Waiting for app...'; sleep 3; done && pip install 'pytest-html==3.2.0' -q --break-system-packages && pytest tests/playwright -v --html=report/report.html --self-contained-html"
+    ]
 
 volumes:
   db_data:
