@@ -196,10 +196,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         if (!$date || !$shiftSchedId) {
             $message = 'Please select a valid date and shift.'; $messageType = 'error';
         } else {
-            $chk = $pdo->prepare("SELECT dtr_id FROM dtr_records WHERE emp_id = ? AND date = ?");
+            $chk = $pdo->prepare("SELECT dtr_id, status FROM dtr_records WHERE emp_id = ? AND date = ?");
             $chk->execute([$empId, $date]);
-            if ($chk->fetch()) {
+            $existingDtr = $chk->fetch();
+            if ($existingDtr && $existingDtr['status'] !== 'declined') {
                 $message = 'A DTR entry for ' . htmlspecialchars($date) . ' already exists.'; $messageType = 'error';
+            } elseif ($existingDtr && $existingDtr['status'] === 'declined') {
+                // Replace the declined record with a fresh submission
+                $initialStatus = $isAutoApproved ? 'approved' : 'pending';
+                $pdo->prepare("UPDATE dtr_records SET shift_sched_id = ?, status = ?, submitted_at = NOW(), updated_at = NOW() WHERE dtr_id = ?")
+                    ->execute([$shiftSchedId, $initialStatus, $existingDtr['dtr_id']]);
+                $message = $isAutoApproved
+                    ? 'DTR resubmitted and automatically approved for ' . htmlspecialchars($date) . '.'
+                    : 'DTR resubmitted for ' . htmlspecialchars($date) . '. Pending approval from your assigned approver.';
+                $messageType = 'success';
             } else {
                 // Auto-approved groups get status='approved' immediately; others get 'pending'
                 $initialStatus = $isAutoApproved ? 'approved' : 'pending';
@@ -233,10 +243,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if (!$isLWOP && $bal['remaining'] <= 0) {
                 $message = 'You have no remaining ' . htmlspecialchars($bal['leave_type_name']) . ' balance.'; $messageType = 'error';
             } else {
-                $chk = $pdo->prepare("SELECT leave_rec_id FROM leave_records WHERE emp_id = ? AND date = ?");
+                $chk = $pdo->prepare("SELECT leave_rec_id, status FROM leave_records WHERE emp_id = ? AND date = ?");
                 $chk->execute([$empId, $date]);
-                if ($chk->fetch()) {
+                $existingLeave = $chk->fetch();
+                if ($existingLeave && $existingLeave['status'] !== 'declined') {
                     $message = 'A leave entry for ' . htmlspecialchars($date) . ' already exists.'; $messageType = 'error';
+                } elseif ($existingLeave && $existingLeave['status'] === 'declined') {
+                    // Replace the declined record with a fresh submission
+                    $initialStatus = $isAutoApproved ? 'approved' : 'pending';
+                    $pdo->prepare("UPDATE leave_records SET leave_type_id = ?, status = ?, submitted_at = NOW() WHERE leave_rec_id = ?")
+                        ->execute([$leaveTypeId, $initialStatus, $existingLeave['leave_rec_id']]);
+                    $message = $isAutoApproved
+                        ? htmlspecialchars($bal['leave_type_name']) . ' resubmitted and automatically approved for ' . htmlspecialchars($date) . '.'
+                        : htmlspecialchars($bal['leave_type_name']) . ' resubmitted for ' . htmlspecialchars($date) . '. Pending approval from your assigned approver.';
+                    $messageType = 'success';
                 } else {
                     $initialStatus = $isAutoApproved ? 'approved' : 'pending';
                     $pdo->prepare("INSERT INTO leave_records (emp_id, leave_type_id, date, status) VALUES (?,?,?,?)")
@@ -321,6 +341,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = 'Leave declined.'; $messageType = 'info';
         } else {
             $message = 'Unauthorized action.'; $messageType = 'error';
+        }
+    }
+
+    // ── Cancel DTR (employee cancels their own pending DTR) ───────────────────
+    elseif ($action === 'cancel_dtr') {
+        $dtrId = (int)($_POST['dtr_id'] ?? 0);
+        // Security: confirm this DTR belongs to the logged-in employee and is still pending
+        $stmtSec = $pdo->prepare("
+            SELECT dtr_id FROM dtr_records
+            WHERE  dtr_id = ? AND emp_id = ? AND status = 'pending'
+        ");
+        $stmtSec->execute([$dtrId, $empId]);
+        if ($stmtSec->fetch()) {
+            $pdo->prepare("DELETE FROM dtr_records WHERE dtr_id = ?")->execute([$dtrId]);
+            $message = 'DTR cancelled successfully.'; $messageType = 'success';
+        } else {
+            $message = 'Unable to cancel DTR. It may have already been actioned.'; $messageType = 'error';
+        }
+    }
+
+    // ── Cancel Leave (employee cancels their own pending leave) ───────────────
+    elseif ($action === 'cancel_leave') {
+        $leaveRecId = (int)($_POST['leave_rec_id'] ?? 0);
+        // Security: confirm this leave belongs to the logged-in employee and is still pending
+        $stmtSec = $pdo->prepare("
+            SELECT leave_rec_id FROM leave_records
+            WHERE  leave_rec_id = ? AND emp_id = ? AND status = 'pending'
+        ");
+        $stmtSec->execute([$leaveRecId, $empId]);
+        if ($stmtSec->fetch()) {
+            $pdo->prepare("DELETE FROM leave_records WHERE leave_rec_id = ?")->execute([$leaveRecId]);
+            $message = 'Leave request cancelled successfully.'; $messageType = 'success';
+        } else {
+            $message = 'Unable to cancel leave. It may have already been actioned.'; $messageType = 'error';
         }
     }
 
@@ -745,6 +799,59 @@ $pendingCount = count($pendingDTRApprovals) + count($pendingLeaveApprovals);
             </div>
         </div>
 
+        <!-- Cancel / status panel (shown when a pending or declined record exists for the clicked date) -->
+        <div id="cancelPanel" hidden>
+            <!-- Cancel pending DTR -->
+            <div id="cancelDTRSection" hidden>
+                <p style="margin-bottom:10px;">
+                    You have a <strong>pending DTR</strong> for this date.
+                </p>
+                <form method="POST">
+                    <input type="hidden" name="action"  value="cancel_dtr">
+                    <input type="hidden" name="dtr_id"  id="cancelDtrId">
+                    <button type="submit" class="btn btn-danger" style="width:100%;"
+                            onclick="return confirm('Cancel this DTR submission?');">
+                        <span aria-hidden="true">✕</span> Cancel DTR
+                    </button>
+                </form>
+            </div>
+
+            <!-- Cancel pending Leave -->
+            <div id="cancelLeaveSection" hidden>
+                <p style="margin-bottom:10px;">
+                    You have a <strong>pending Leave request</strong> for this date.
+                </p>
+                <form method="POST">
+                    <input type="hidden" name="action"        value="cancel_leave">
+                    <input type="hidden" name="leave_rec_id"  id="cancelLeaveId">
+                    <button type="submit" class="btn btn-danger" style="width:100%;"
+                            onclick="return confirm('Cancel this leave request?');">
+                        <span aria-hidden="true">✕</span> Cancel Leave Request
+                    </button>
+                </form>
+            </div>
+
+            <!-- Declined DTR — allow resubmit -->
+            <div id="declinedDTRSection" hidden>
+                <p style="margin-bottom:10px; color:#842029;">
+                    Your DTR for this date was <strong>declined</strong>. You may resubmit.
+                </p>
+                <button class="btn btn-primary" onclick="showDTRForm()" style="width:100%;">
+                    <span aria-hidden="true">📋</span> Resubmit DTR
+                </button>
+            </div>
+
+            <!-- Declined Leave — allow resubmit -->
+            <div id="declinedLeaveSection" hidden>
+                <p style="margin-bottom:10px; color:#842029;">
+                    Your Leave request for this date was <strong>declined</strong>. You may resubmit.
+                </p>
+                <button class="btn btn-secondary" onclick="showLeaveForm()" style="width:100%;">
+                    <span aria-hidden="true">🏖️</span> Resubmit Leave Request
+                </button>
+            </div>
+        </div>
+
         <!-- Step 2a: DTR form -->
         <div id="dtrForm" hidden>
             <form method="POST">
@@ -824,6 +931,10 @@ $pendingCount = count($pendingDTRApprovals) + count($pendingLeaveApprovals);
 <script>
 var lastFocusedCell = null;
 
+// Data maps injected from PHP for cancel/resubmit awareness
+var dtrData   = <?= json_encode(array_map(fn($r) => ['dtr_id' => $r['dtr_id'], 'status' => $r['status']], $dtrRecords)) ?>;
+var leaveData = <?= json_encode(array_map(fn($r) => ['leave_rec_id' => $r['leave_rec_id'], 'status' => $r['status']], $leaveRecords)) ?>;
+
 function showSection(sectionId, linkEl) {
     document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
     var target = document.getElementById(sectionId);
@@ -847,7 +958,11 @@ function showDTRModal(date) {
     document.getElementById('selectedDate').value      = date;
     document.getElementById('selectedDateLeave').value = date;
     document.getElementById('modalTitle').textContent  = 'Action for ' + date;
-    resetModal();
+
+    var dtr   = dtrData[date]   || null;
+    var leave = leaveData[date] || null;
+
+    resetModal(dtr, leave);
     modal.classList.add('active');
     modal.removeAttribute('aria-hidden');
     var firstFocusable = modal.querySelector('button, [href], input, select, [tabindex]:not([tabindex="-1"])');
@@ -878,6 +993,7 @@ function trapFocus(e) {
 
 function showDTRForm() {
     document.getElementById('actionSelection').hidden = true;
+    document.getElementById('cancelPanel').hidden     = true;
     document.getElementById('dtrForm').hidden         = false;
     document.getElementById('modalTitle').textContent = 'Submit DTR';
     document.getElementById('shift_sched_id').focus();
@@ -885,18 +1001,65 @@ function showDTRForm() {
 
 function showLeaveForm() {
     document.getElementById('actionSelection').hidden = true;
+    document.getElementById('cancelPanel').hidden     = true;
     document.getElementById('leaveForm').hidden       = false;
     document.getElementById('modalTitle').textContent = 'File Leave Request';
     document.getElementById('leave_type_id').focus();
 }
 
-function backToSelection() { resetModal(); }
+function backToSelection() {
+    // Re-read the current date from the hidden field to restore correct panel
+    var date  = document.getElementById('selectedDate').value;
+    var dtr   = dtrData[date]   || null;
+    var leave = leaveData[date] || null;
+    resetModal(dtr, leave);
+}
 
-function resetModal() {
-    document.getElementById('actionSelection').hidden = false;
+function resetModal(dtr, leave) {
+    // Hide all step panels first
+    document.getElementById('actionSelection').hidden = true;
+    document.getElementById('cancelPanel').hidden     = true;
     document.getElementById('dtrForm').hidden         = true;
     document.getElementById('leaveForm').hidden       = true;
-    document.getElementById('modalTitle').textContent = 'Choose Action';
+
+    // Hide all sub-panels inside cancelPanel
+    document.getElementById('cancelDTRSection').hidden     = true;
+    document.getElementById('cancelLeaveSection').hidden   = true;
+    document.getElementById('declinedDTRSection').hidden   = true;
+    document.getElementById('declinedLeaveSection').hidden = true;
+
+    var hasCancelOrDeclined = false;
+
+    if (dtr) {
+        if (dtr.status === 'pending') {
+            document.getElementById('cancelDtrId').value          = dtr.dtr_id;
+            document.getElementById('cancelDTRSection').hidden    = false;
+            hasCancelOrDeclined = true;
+        } else if (dtr.status === 'declined') {
+            document.getElementById('declinedDTRSection').hidden  = false;
+            hasCancelOrDeclined = true;
+        }
+        // 'approved' DTR: no action available, fall through to default
+    }
+
+    if (leave) {
+        if (leave.status === 'pending') {
+            document.getElementById('cancelLeaveId').value         = leave.leave_rec_id;
+            document.getElementById('cancelLeaveSection').hidden   = false;
+            hasCancelOrDeclined = true;
+        } else if (leave.status === 'declined') {
+            document.getElementById('declinedLeaveSection').hidden = false;
+            hasCancelOrDeclined = true;
+        }
+        // 'approved' leave: no action available
+    }
+
+    if (hasCancelOrDeclined) {
+        document.getElementById('cancelPanel').hidden = false;
+    } else {
+        // No existing record (or approved) — show the normal action selection
+        document.getElementById('actionSelection').hidden = false;
+    }
 }
 
 document.getElementById('dtrModal').addEventListener('click', function(e) {
