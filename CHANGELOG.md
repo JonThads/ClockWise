@@ -1,3 +1,7 @@
+v1.2.3 [FEATURE]
+        -- Leave Submission
+            -- Users can Cancel their existing Pending DTR and Leave Requests
+
 v1.1.2 [FEATURE]
         -- Roles
             -- Added Roles for Access Level Functionality in Employee Account Creation
