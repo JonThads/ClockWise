@@ -1,19 +1,63 @@
-v1.2.3 [FEATURE]
-        -- Leave Submission
-            -- Users can Cancel their existing Pending DTR and Leave Requests
+## v1.2.5 - 2026-03-21
 
-v1.1.2 [FEATURE]
-        -- Roles
-            -- Added Roles for Access Level Functionality in Employee Account Creation
-            -- Created 'user_roles' table
-        -- Login
-            -- Login Page connected at the ClockWise Database
-            -- Login Redirect based on Username assigned Role
-        -- Session
-            -- Placed session_start() at config file
-        
-v1.1.1 [FEATURE]
-        -- Add New Employees Functionality
+### Added
+- DTR and Leave Submission FastAPI Reports v1.0.0
 
-v1.1.0 [FEATURE]
-        -- Added Employees in Employee Management in Admin Dashboard, Added Shift Schedules and Leave Types at User Dashboard, CHANGELOG, LICENSE, README
+## v1.2.4 - 2026-03-21
+
+### Added
+- Added No Leave Balance and Executive User Leave Submission Tests
+
+## v1.2.3 - 2026-03-14
+
+### Added
+- Ability for users to cancel existing pending DTR and Leave requests
+- Automated Leave Submission test cases
+- Screenshots captured for every Leave Submission test
+- `credentials.json` file
+
+### Refactored
+- `conftest.py` refactoring
+- Changelog.md semantic change using markdown
+
+### Tests
+- Added Leave Submission automated tests
+- Implemented screenshot capture for debugging failed tests
+
+
+## v1.1.2
+
+### Added
+#### Roles
+- Role-based access level functionality during Employee Account creation
+- Created `user_roles` database table
+
+#### Login
+- Connected Login Page to the ClockWise database
+- Implemented login redirection based on the user's assigned role
+
+### Changed
+#### Session
+- Moved `session_start()` initialization to the configuration file
+
+
+## v1.1.1
+
+### Added
+- Add New Employees functionality
+
+
+## v1.1.0
+
+### Added
+#### Admin Dashboard
+- Employee Management module
+
+#### User Dashboard
+- Shift Schedules management
+- Leave Types configuration
+
+### Documentation
+- Added `CHANGELOG`
+- Added `LICENSE`
+- Added `README`
