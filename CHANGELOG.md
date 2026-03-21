@@ -1,3 +1,8 @@
+## v1.2.4 - 2026-03-21
+
+### Added
+- Added No Leave Balance and Executive User Leave Submission Tests
+
 ## v1.2.3 - 2026-03-14
 
 ### Added
