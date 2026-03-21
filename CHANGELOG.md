@@ -1,3 +1,8 @@
+## v1.2.5 - 2026-03-21
+
+### Added
+- DTR and Leave Submission FastAPI Reports v1.0.0
+
 ## v1.2.4 - 2026-03-21
 
 ### Added
