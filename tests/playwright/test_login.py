@@ -3,7 +3,7 @@ from playwright.sync_api import expect
 
 def test_admin_login_success(page, base_url):
     # Navigate to ClockWise Login Page
-    page.goto(f"{base_url}/login.php")
+    page.goto(f"{base_url}login.php")
 
     # Perform Login
     page.get_by_role("textbox", name="Username").fill("aaadmin2018")

@@ -9,7 +9,7 @@ from pathlib import Path
 # Helper Functions
 # -----------------------------
 def login(page, base_url, username, password):
-    page.goto(f"{base_url}/login.php", wait_until="domcontentloaded")
+    page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
     page.get_by_role("textbox", name="Username").fill(username)
     page.get_by_role("textbox", name="Password").fill(password)
     page.get_by_role("button", name="Log In").click()
