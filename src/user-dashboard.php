@@ -239,8 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = 'That leave type is not available for your work group.'; $messageType = 'error';
         } else {
             $bal    = $leaveBalances[$leaveTypeId];
-            $isLWOP = ($bal['leave_type_code'] === 'NoPay');
-            if (!$isLWOP && $bal['remaining'] <= 0) {
+            if ($bal['remaining'] <= 0) {
                 $message = 'You have no remaining ' . htmlspecialchars($bal['leave_type_name']) . ' balance.'; $messageType = 'error';
             } else {
                 $chk = $pdo->prepare("SELECT leave_rec_id, status FROM leave_records WHERE emp_id = ? AND date = ?");
@@ -900,11 +899,11 @@ $pendingCount = count($pendingDTRApprovals) + count($pendingLeaveApprovals);
                     <select name="leave_type_id" id="leave_type_id" class="form-select" required aria-required="true">
                         <option value="">Choose leave type…</option>
                         <?php foreach ($leaveBalances as $lb):
-                            if ($lb['leave_type_code'] === 'BDay' && $birthdayMonth !== null && $birthdayMonth !== (int)date('n')) continue;
+                            if ($lb['leave_type_code'] === 'BDay' && $birthdayMonth !== null && $birthdayMonth !== $currentMonth) continue;
                             $isLWOP    = ($lb['leave_type_code'] === 'NoPay');
-                            $noBalance = (!$isLWOP && $lb['remaining'] <= 0);
+                            $noBalance = ($lb['remaining'] <= 0);
                             $label     = htmlspecialchars($lb['leave_type_name']) . ' (' . htmlspecialchars($lb['leave_type_code']) . ')';
-                            $balance   = $isLWOP ? '' : ' — ' . $lb['remaining'] . ' / ' . $lb['allotted'] . ' days';
+                            $balance   = ' — ' . $lb['remaining'] . ' / ' . $lb['allotted'] . ' days';
                         ?>
                         <option
                             value="<?= (int)$lb['leave_type_id'] ?>"
