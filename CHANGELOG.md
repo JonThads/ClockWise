@@ -1,3 +1,20 @@
+## v1.2.6 - 2026-03-22
+
+### Fixed
+- BDay leave not appearing in dropdown
+- NoPay balance indicator missing in dropdown
+- NoPay accepts submission even with zero remaining balance
+
+## v1.2.5 - 2026-03-21
+
+### Added
+- DTR and Leave Submission FastAPI Reports v1.0.0
+
+## v1.2.4 - 2026-03-21
+
+### Added
+- Added No Leave Balance and Executive User Leave Submission Tests
+
 ## v1.2.3 - 2026-03-14
 
 ### Added
