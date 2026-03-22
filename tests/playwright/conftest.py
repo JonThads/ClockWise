@@ -51,7 +51,7 @@ def pytest_runtest_makereport(item, call):
     if rep.when == "call":
         page = item.funcargs.get("page")
         if page:
-            os.makedirs("playwright_screenshots", exist_ok=True)
+            os.makedirs("report/playwright_screenshots", exist_ok=True)
             status = "passed" if rep.passed else "failed"
             screenshot_path = f"report/playwright_screenshots/{item.name}_{status}.png"
             page.screenshot(path=screenshot_path)

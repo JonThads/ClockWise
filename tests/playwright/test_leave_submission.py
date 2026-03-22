@@ -9,7 +9,7 @@ from pathlib import Path
 # Helper Functions
 # -----------------------------
 def login(page, base_url, username, password):
-    page.goto(f"{base_url}/login.php", wait_until="domcontentloaded")
+    page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
     page.get_by_role("textbox", name="Username").fill(username)
     page.get_by_role("textbox", name="Password").fill(password)
     page.get_by_role("button", name="Log In").click()
@@ -109,7 +109,7 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Vacation Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/vl_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/vl_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -124,7 +124,7 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Vacation Leave (VL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/vl_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/vl_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -151,7 +151,7 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Sick Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/sl_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/sl_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -166,7 +166,7 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Sick Leave (SL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/sl_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/sl_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -193,7 +193,7 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Emergency Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/el_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/el_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -208,7 +208,7 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Emergency Leave (EL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/el_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/el_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -235,7 +235,7 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Leave Without Pay submitted")
-    page.screenshot(path=f"report/playwright_screenshots/nopay_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/nopay_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -250,7 +250,7 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Leave Without Pay (NoPay)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/nopay_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/nopay_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -277,7 +277,7 @@ def test_file_EDU_submission_success(page, base_url, credentials, test_leave_dat
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Study Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/edu_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/edu_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -292,6 +292,6 @@ def test_file_EDU_submission_success(page, base_url, credentials, test_leave_dat
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Study Leave (EDU)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/edu_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/edu_submission_check_{test_leave_date}.png")
 
     logout(page)

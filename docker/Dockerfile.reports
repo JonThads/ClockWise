@@ -1,0 +1,15 @@
+# docker/Dockerfile.reports
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Copy and install dependencies from requirements.reports.txt file
+COPY requirements.reports.txt .
+RUN pip install --no-cache-dir -r requirements.reports.txt
+
+# Copy the reports source code
+COPY src/reports/ .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
