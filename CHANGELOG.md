@@ -5,6 +5,11 @@
 - NoPay balance indicator missing in dropdown
 - NoPay accepts submission even with zero remaining balance
 
+### Added
+- docker-compose.yml for FastAPI Reports
+- Dockerfile.reports
+- Modified Base URL to be "app/"
+
 ## v1.2.5 - 2026-03-21
 
 ### Added
