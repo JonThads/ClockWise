@@ -1,3 +1,14 @@
+## v1.2.7 - 2026-04-03
+
+### Added
+- [Tests] Unit and Integration Tests for ClockWise FastAPI Reports
+- [Tests] Unit and Integration Report HTML Files
+- [Tests] Added Allure Reports
+- [Tests] Added Epic, Features, Stories, Titles, Severities, and Tags for Allure Reports
+- [pip] Added pydantic, fastapi, allure-reports
+- pytest.ini for strict markers
+- Folder Organization Restructuring to differentiate Unit, Integration, and E2E Tests
+
 ## v1.2.6 - 2026-03-22
 
 ### Fixed

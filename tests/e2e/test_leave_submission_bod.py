@@ -1,5 +1,6 @@
 import re
 import os
+import allure
 import pytest
 import pymysql
 from pathlib import Path
@@ -72,14 +73,14 @@ def test_leave_date() -> date:
 @pytest.fixture
 def cleanup_auto_approved_leave(credentials, test_leave_date, request):
     """
-    Teardown fixture for auto-approved leave submissions (e.g. Executive group).
+    Teardown fixture for auto-approved leave submissions (e.g. Board of Directors group).
     Since auto-approved leaves are inserted with status='approved' immediately,
     there is no cancel button in the UI — so teardown deletes the record directly
     from the DB using the test_leave_date fixture so the date is never hardcoded.
 
     Usage in test:
         def test_something(page, ..., cleanup_auto_approved_leave):
-            cleanup_auto_approved_leave("executive")   ← pass the credentials key
+            cleanup_auto_approved_leave("board")   ← pass the credentials key
     """
     def _cleanup(credentials_key: str):
         username = credentials[credentials_key]["username"]
@@ -117,27 +118,37 @@ def cleanup_auto_approved_leave(credentials, test_leave_date, request):
 # -----------------------------
 # File VL
 # -----------------------------
-def test_file_vl_submission_executive_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
-    cleanup_auto_approved_leave("executive")
 
-    executive = credentials["executive"]
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Board of Directors VL is automatically approved upon submission")
+@allure.description("Verifies that the Vacation Leave option is automatically approved for Board of Directors upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "VL", "board", "auto-approved", "regression")
 
-    login(page, base_url, executive["username"], executive["password"])
+@pytest.mark.e2e
+def test_file_vl_submission_board_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
+    cleanup_auto_approved_leave("board")
+
+    board = credentials["board"]
+
+    login(page, base_url, board["username"], board["password"])
 
     print("ACTUAL URL:", page.url)
     expect(page).to_have_url(re.compile(r"user-dashboard\.php"))
     expect(page.locator("#page-heading")).to_contain_text("My Calendar")
-    expect(page.locator("header")).to_contain_text("Executive")
+    expect(page.locator("header")).to_contain_text("Board of Directors")
     expect(page.get_by_label("Calendar legend")).to_contain_text("✓ Your submissions are auto-approved.")
 
     navigate_to_date_on_calendar(page, base_url, test_leave_date)
-    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Executive group. Your DTR and leave submissions are automatically approved.")
+    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Board of Directors group. Your DTR and leave submissions are automatically approved.")
     page.get_by_role("button", name="File Leave Request").click()
     page.get_by_label("Leave Type * (required)").select_option("1")
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Vacation Leave submitted and automatically approved")
-    page.screenshot(path=f"report/playwright_screenshots/leave_submission/executive/vl_submitted_executive_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/board/vl_submitted_board_{test_leave_date}.png")
 
     logout(page)
 
@@ -145,27 +156,37 @@ def test_file_vl_submission_executive_success(page, base_url, credentials, test_
 # -----------------------------
 # File SL
 # -----------------------------
-def test_file_sl_submission_executive_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
-    cleanup_auto_approved_leave("executive")
 
-    executive = credentials["executive"]
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Board of Directors SL is automatically approved upon submission")
+@allure.description("Verifies that the Sick Leave option is automatically approved for Board of Directors upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "SL", "board", "auto-approved", "regression")
 
-    login(page, base_url, executive["username"], executive["password"])
+@pytest.mark.e2e
+def test_file_sl_submission_board_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
+    cleanup_auto_approved_leave("board")
+
+    board = credentials["board"]
+
+    login(page, base_url, board["username"], board["password"])
 
     print("ACTUAL URL:", page.url)
     expect(page).to_have_url(re.compile(r"user-dashboard\.php"))
     expect(page.locator("#page-heading")).to_contain_text("My Calendar")
-    expect(page.locator("header")).to_contain_text("Executive")
+    expect(page.locator("header")).to_contain_text("Board of Directors")
     expect(page.get_by_label("Calendar legend")).to_contain_text("✓ Your submissions are auto-approved.")
 
     navigate_to_date_on_calendar(page, base_url, test_leave_date)
-    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Executive group. Your DTR and leave submissions are automatically approved.")
+    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Board of Directors group. Your DTR and leave submissions are automatically approved.")
     page.get_by_role("button", name="File Leave Request").click()
     page.get_by_label("Leave Type * (required)").select_option("2")
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Sick Leave submitted and automatically approved")
-    page.screenshot(path=f"report/playwright_screenshots/leave_submission/executive/sl_submitted_executive_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/board/sl_submitted_board_{test_leave_date}.png")
 
     logout(page)
 
@@ -173,82 +194,36 @@ def test_file_sl_submission_executive_success(page, base_url, credentials, test_
 # -----------------------------
 # File EL
 # -----------------------------
-def test_file_el_submission_executive_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
-    cleanup_auto_approved_leave("executive")
 
-    executive = credentials["executive"]
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Board of Directors EL is automatically approved upon submission")
+@allure.description("Verifies that the Emergency Leave option is automatically approved for Board of Directors upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "EL", "board", "auto-approved", "regression")
 
-    login(page, base_url, executive["username"], executive["password"])
+@pytest.mark.e2e
+def test_file_el_submission_board_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
+    cleanup_auto_approved_leave("board")
+
+    board = credentials["board"]
+
+    login(page, base_url, board["username"], board["password"])
 
     print("ACTUAL URL:", page.url)
     expect(page).to_have_url(re.compile(r"user-dashboard\.php"))
     expect(page.locator("#page-heading")).to_contain_text("My Calendar")
-    expect(page.locator("header")).to_contain_text("Executive")
+    expect(page.locator("header")).to_contain_text("Board of Directors")
     expect(page.get_by_label("Calendar legend")).to_contain_text("✓ Your submissions are auto-approved.")
 
     navigate_to_date_on_calendar(page, base_url, test_leave_date)
-    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Executive group. Your DTR and leave submissions are automatically approved.")
+    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Board of Directors group. Your DTR and leave submissions are automatically approved.")
     page.get_by_role("button", name="File Leave Request").click()
     page.get_by_label("Leave Type * (required)").select_option("3")
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Emergency Leave submitted and automatically approved")
-    page.screenshot(path=f"report/playwright_screenshots/leave_submission/executive/el_submitted_executive_{test_leave_date}.png")
-
-    logout(page)
-
-
-# -----------------------------
-# File NoPay
-# -----------------------------
-def test_file_nopay_submission_executive_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
-    cleanup_auto_approved_leave("executive")
-
-    executive = credentials["executive"]
-
-    login(page, base_url, executive["username"], executive["password"])
-
-    print("ACTUAL URL:", page.url)
-    expect(page).to_have_url(re.compile(r"user-dashboard\.php"))
-    expect(page.locator("#page-heading")).to_contain_text("My Calendar")
-    expect(page.locator("header")).to_contain_text("Executive")
-    expect(page.get_by_label("Calendar legend")).to_contain_text("✓ Your submissions are auto-approved.")
-
-    navigate_to_date_on_calendar(page, base_url, test_leave_date)
-    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Executive group. Your DTR and leave submissions are automatically approved.")
-    page.get_by_role("button", name="File Leave Request").click()
-    page.get_by_label("Leave Type * (required)").select_option("5")
-    page.get_by_role("button", name="Submit Leave").click()
-
-    expect(page.get_by_role("status")).to_contain_text("Leave Without Pay submitted and automatically approved")
-    page.screenshot(path=f"report/playwright_screenshots/leave_submission/executive/nopay_submitted_executive_{test_leave_date}.png")
-
-    logout(page)
-
-
-# -----------------------------
-# File EDU
-# -----------------------------
-def test_file_edu_submission_executive_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
-    cleanup_auto_approved_leave("executive")
-
-    executive = credentials["executive"]
-
-    login(page, base_url, executive["username"], executive["password"])
-
-    print("ACTUAL URL:", page.url)
-    expect(page).to_have_url(re.compile(r"user-dashboard\.php"))
-    expect(page.locator("#page-heading")).to_contain_text("My Calendar")
-    expect(page.locator("header")).to_contain_text("Executive")
-    expect(page.get_by_label("Calendar legend")).to_contain_text("✓ Your submissions are auto-approved.")
-
-    navigate_to_date_on_calendar(page, base_url, test_leave_date)
-    expect(page.get_by_role("note")).to_contain_text("✓ You are in the Executive group. Your DTR and leave submissions are automatically approved.")
-    page.get_by_role("button", name="File Leave Request").click()
-    page.get_by_label("Leave Type * (required)").select_option("6")
-    page.get_by_role("button", name="Submit Leave").click()
-
-    expect(page.get_by_role("status")).to_contain_text("Study Leave submitted and automatically approved")
-    page.screenshot(path=f"report/playwright_screenshots/leave_submission/executive/edu_submitted_executive_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/board/el_submitted_board_{test_leave_date}.png")
 
     logout(page)

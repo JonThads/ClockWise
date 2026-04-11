@@ -2,6 +2,7 @@
 *.sql
 *.env
 *.png
+*.pyc
 
 #Ignore specific files
 credentials.json
