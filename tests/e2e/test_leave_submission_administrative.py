@@ -1,5 +1,6 @@
 import re
 import os
+import allure
 import pytest
 import pymysql
 from pathlib import Path
@@ -117,6 +118,16 @@ def cleanup_auto_approved_leave(credentials, test_leave_date, request):
 # -----------------------------
 # File VL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Administrative employee VL is automatically approved upon submission")
+@allure.description("Verifies that the Vacation Leave option is automatically approved for Administrative employees upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "VL", "administrative", "auto-approved", "regression")
+
+@pytest.mark.e2e
 def test_file_vl_submission_administrative_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
     cleanup_auto_approved_leave("administrative")
 
@@ -145,6 +156,16 @@ def test_file_vl_submission_administrative_success(page, base_url, credentials, 
 # -----------------------------
 # File SL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Administrative employee SL is automatically approved upon submission")
+@allure.description("Verifies that the Sick Leave option is automatically approved for Administrative employees upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "SL", "administrative", "auto-approved", "regression")
+
+@pytest.mark.e2e
 def test_file_sl_submission_administrative_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
     cleanup_auto_approved_leave("administrative")
 
@@ -173,6 +194,16 @@ def test_file_sl_submission_administrative_success(page, base_url, credentials, 
 # -----------------------------
 # File EL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Administrative employee EL is automatically approved upon submission")
+@allure.description("Verifies that the Emergency Leave option is automatically approved for Administrative employees upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "EL", "administrative", "auto-approved", "regression")
+
+@pytest.mark.e2e
 def test_file_el_submission_administrative_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
     cleanup_auto_approved_leave("administrative")
 
@@ -201,6 +232,16 @@ def test_file_el_submission_administrative_success(page, base_url, credentials, 
 # -----------------------------
 # File NoPay
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Administrative employee NoPay is automatically approved upon submission")
+@allure.description("Verifies that the Leave Without Pay option is automatically approved for Administrative employees upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "NoPay", "administrative", "auto-approved", "regression")
+
+@pytest.mark.e2e
 def test_file_nopay_submission_administrative_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
     cleanup_auto_approved_leave("administrative")
 
@@ -229,6 +270,16 @@ def test_file_nopay_submission_administrative_success(page, base_url, credential
 # -----------------------------
 # File EDU
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Auto-approved groups get instant approval")
+@allure.title("Administrative employee EDU is automatically approved upon submission")
+@allure.description("Verifies that the Study Leave option is automatically approved for Administrative employees upon submission.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "EDU", "administrative", "auto-approved", "regression")
+
+@pytest.mark.e2e
 def test_file_edu_submission_administrative_success(page, base_url, credentials, test_leave_date, cleanup_auto_approved_leave):
     cleanup_auto_approved_leave("administrative")
 

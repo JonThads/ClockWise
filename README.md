@@ -44,6 +44,7 @@ ClockWise follows **WCAG 2.1 Level AA** guidelines where feasible. A full access
 - **Frontend:** HTML, CSS, JavaScript
 - **Database:** MySQL (with normalized tables for employees, departments, work groups, shift schedules, and leaves)
 - **Server:** XAMPP / Apache
+- **Reports:** Python / FastAPI / Allure Reports
 
 ---
 

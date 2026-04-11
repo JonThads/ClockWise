@@ -1,4 +1,5 @@
 import re
+import allure
 import pytest
 from datetime import date, timedelta
 from playwright.sync_api import expect
@@ -71,6 +72,16 @@ def test_leave_date() -> date:
 # -----------------------------
 # File VL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee cannot file leave with no balance")
+@allure.title("VL option is disabled when employee has zero VL balance")
+@allure.description("Verifies that the Vacation Leave option is disabled in the leave modal when the employee has exhausted their VL balance.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "VL", "no-balance", "regression")
+
+@pytest.mark.e2e
 def test_no_vl_balance(page, base_url, credentials, test_leave_date):
     no_leave = credentials["no_leave"]
     login(page, base_url, no_leave["username"], no_leave["password"])
@@ -97,6 +108,16 @@ def test_no_vl_balance(page, base_url, credentials, test_leave_date):
 # -----------------------------
 # File SL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee cannot file leave with no balance")
+@allure.title("SL option is disabled when employee has zero SL balance")
+@allure.description("Verifies that the Sick Leave option is disabled in the leave modal when the employee has exhausted their SL balance.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "SL", "no-balance", "regression")
+
+@pytest.mark.e2e
 def test_no_sl_balance(page, base_url, credentials, test_leave_date):
     no_leave = credentials["no_leave"]
     login(page, base_url, no_leave["username"], no_leave["password"])
@@ -123,6 +144,16 @@ def test_no_sl_balance(page, base_url, credentials, test_leave_date):
 # -----------------------------
 # File EL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee cannot file leave with no balance")
+@allure.title("EL option is disabled when employee has zero EL balance")
+@allure.description("Verifies that the Emergency Leave option is disabled in the leave modal when the employee has exhausted their EL balance.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "EL", "no-balance", "regression")
+
+@pytest.mark.e2e
 def test_no_el_balance(page, base_url, credentials, test_leave_date):
     no_leave = credentials["no_leave"]
     login(page, base_url, no_leave["username"], no_leave["password"])
@@ -149,6 +180,16 @@ def test_no_el_balance(page, base_url, credentials, test_leave_date):
 # -----------------------------
 # File NoPay
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee cannot file leave with no balance")
+@allure.title("NoPay option is disabled when employee has zero NoPay balance")
+@allure.description("Verifies that the NoPay Leave option is disabled in the leave modal when the employee has exhausted their NoPay balance.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "NoPay", "no-balance", "regression")
+
+@pytest.mark.e2e
 def test_no_nopay_balance(page, base_url, credentials, test_leave_date):
     no_leave = credentials["no_leave"]
     login(page, base_url, no_leave["username"], no_leave["password"])
@@ -175,6 +216,16 @@ def test_no_nopay_balance(page, base_url, credentials, test_leave_date):
 # -----------------------------
 # File EDU
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee cannot file leave with no balance")
+@allure.title("EDU option is disabled when employee has zero EDU balance")
+@allure.description("Verifies that the EDU Leave option is disabled in the leave modal when the employee has exhausted their EDU balance.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "EDU", "no-balance", "regression")
+
+@pytest.mark.e2e
 def test_no_edu_balance(page, base_url, credentials, test_leave_date):
     no_leave = credentials["no_leave"]
     login(page, base_url, no_leave["username"], no_leave["password"])

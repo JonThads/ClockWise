@@ -2,6 +2,7 @@ import pytest
 from playwright.sync_api import sync_playwright
 import os
 import json
+from pathlib import Path
 
 # -----------------------------
 # Browser & Page Fixtures
@@ -9,15 +10,16 @@ import json
 @pytest.fixture(scope="session")
 def browser():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         yield browser
         browser.close()
 
 @pytest.fixture(scope="function")
 def page(browser):
-    context = browser.new_context()
+    context = browser.new_context(storage_state=None)
     page = context.new_page()
     yield page
+    context.clear_cookies()
     context.close()
 
 @pytest.fixture(scope="session")
@@ -30,7 +32,7 @@ def base_url():
 @pytest.fixture(scope="session")
 def credentials():
     credentials_path = os.path.join(
-        os.path.dirname(__file__),   # tests/playwright/
+        os.path.dirname(__file__),   # tests/e2e/
         "..",                        # tests/
         "..",                        # project root
         "src", "config", "credentials.json"

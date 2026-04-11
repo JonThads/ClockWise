@@ -1,6 +1,17 @@
 import re
+import allure
 from playwright.sync_api import expect
+import pytest
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.description("Verifies that an Admin User can log in and is redirected to the Admin Dashboard with correct UI elements visible.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "admin", "smoke")
+
+@pytest.mark.e2e
 def test_admin_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -19,6 +30,16 @@ def test_admin_login_success(page, base_url):
     expect(page.get_by_role("paragraph")).to_contain_text("ClockWise")
     expect(page.get_by_role("navigation", name="Main navigation")).to_be_visible()
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Rank and File user login redirects to User Dashboard")
+@allure.description("Verifies that a Rank and File employee can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "rank-and-file", "smoke")
+
+@pytest.mark.e2e
 def test_user_rnf_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -38,6 +59,16 @@ def test_user_rnf_login_success(page, base_url):
     expect(page.get_by_label("Calendar legend")).to_contain_text("Leave Codes")
     expect(page.get_by_label("Calendar legend")).to_contain_text("Your Leave Balances")
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Supervisory user login redirects to User Dashboard")
+@allure.description("Verifies that a Supervisory employee can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "supervisory", "smoke")
+
+@pytest.mark.e2e
 def test_user_supervisory_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -57,6 +88,16 @@ def test_user_supervisory_login_success(page, base_url):
     expect(page.get_by_label("Calendar legend")).to_contain_text("Leave Codes")
     expect(page.get_by_label("Calendar legend")).to_contain_text("Your Leave Balances")
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Managerial user login redirects to User Dashboard")
+@allure.description("Verifies that a Managerial employee can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "managerial", "smoke")
+
+@pytest.mark.e2e
 def test_user_managerial_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -76,6 +117,16 @@ def test_user_managerial_login_success(page, base_url):
     expect(page.get_by_label("Calendar legend")).to_contain_text("Leave Codes")
     expect(page.get_by_label("Calendar legend")).to_contain_text("Your Leave Balances")
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Executive user login is auto-approved and redirects to User Dashboard")
+@allure.description("Verifies that an Executive employee can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "executive", "smoke", "auto-approved")
+
+@pytest.mark.e2e
 def test_user_executive_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -95,6 +146,16 @@ def test_user_executive_login_success(page, base_url):
     expect(page.get_by_label("Calendar legend")).to_contain_text("Leave Codes")
     expect(page.get_by_label("Calendar legend")).to_contain_text("Your Leave Balances")
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Administrative user login is auto-approved and redirects to User Dashboard")
+@allure.description("Verifies that an Administrative employee can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "administrative", "smoke", "auto-approved")
+
+@pytest.mark.e2e
 def test_user_administrative_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")
@@ -114,6 +175,16 @@ def test_user_administrative_login_success(page, base_url):
     expect(page.get_by_label("Calendar legend")).to_contain_text("Leave Codes")
     expect(page.get_by_label("Calendar legend")).to_contain_text("Your Leave Balances")
 
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Authentication")
+@allure.story("User can log in with valid credentials")
+@allure.title("Board of Directors user login is auto-approved and redirects to User Dashboard")
+@allure.description("Verifies that a Board of Director can log in and sees the calendar, shift codes, leave codes, and leave balances.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("login", "board", "smoke", "auto-approved")
+
+@pytest.mark.e2e
 def test_user_board_login_success(page, base_url):
     # Navigate to ClockWise Login Page
     page.goto(f"{base_url}login.php")

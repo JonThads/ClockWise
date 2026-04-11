@@ -1,4 +1,5 @@
 import re
+import allure
 import pytest
 from datetime import date, timedelta
 from playwright.sync_api import expect
@@ -89,6 +90,16 @@ def cleanup_leave(page, base_url, credentials, test_leave_date, request):
 # -----------------------------
 # File VL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Vacation Leave (VL)")
+@allure.description("Verifies that a Supervisory employee can submit a VL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "VL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_vl_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("VL")
 
@@ -131,6 +142,16 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File SL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Sick Leave (SL)")
+@allure.description("Verifies that a Supervisory employee can submit a SL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "SL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_sl_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("SL")
 
@@ -173,6 +194,16 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File EL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Emergency Leave (EL)")
+@allure.description("Verifies that a Supervisory employee can submit a EL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "EL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_el_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("EL")
 
@@ -215,6 +246,16 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File NOPAY
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Leave Without Pay (NoPay)")
+@allure.description("Verifies that a Supervisory employee can submit a Leave Without Pay (NoPay) request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "NoPay", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("NOPAY")
 
@@ -257,6 +298,16 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
 # -----------------------------
 # File Study Leave (EDU)
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Study Leave (EDU)")
+@allure.description("Verifies that a Supervisory employee can submit a Study Leave (EDU) request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "EDU", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_EDU_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("EDU")
 
