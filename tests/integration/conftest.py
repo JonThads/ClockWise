@@ -5,7 +5,7 @@ import os
 
 @pytest.fixture(scope="session")
 def base_url():
-    return os.getenv("FASTAPI_URL", "http://localhost:8000")
+    return os.getenv("FASTAPI_URL", "http://reports_api:8000")
 
 @pytest.fixture(scope="session")
 def client(base_url):

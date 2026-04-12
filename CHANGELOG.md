@@ -6,6 +6,7 @@
 - [Tests] Added Allure Reports
 - [Tests] Added Epic, Features, Stories, Titles, Severities, and Tags for Allure Reports
 - [pip] Added pydantic, fastapi, allure-reports
+- [Docker] Added cURL for reports_api health check
 - pytest.ini for strict markers
 - Folder Organization Restructuring to differentiate Unit, Integration, and E2E Tests
 
