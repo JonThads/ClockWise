@@ -1,8 +1,8 @@
 #Ignore all SQL and TXT files
 *.sql
-*.txt
 *.env
 *.png
+*.pyc
 
 #Ignore specific files
 credentials.json

@@ -33,6 +33,34 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./clockwise.sql:/docker-entrypoint-initdb.d/clockwise.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-prootpass"]
+      interval: 15s      # check every 15s
+      timeout: 10s       # give each check 10s to respond
+      retries: 5         # try up to 5 times
+      start_period: 90s  # give the container 90s to boot
+
+  reports_api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.reports
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db           # ← service name, not localhost
+      DB_PORT: 3306
+      DB_DATABASE: clockwise
+      DB_USERNAME: root
+      DB_PASSWORD: rootpass
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s      # check every 15s
+      timeout: 10s       # give each check 10s to respond
+      retries: 5         # try up to 5 times
+      start_period: 30s  # give the container 30s to boot
 
   tests:
     build:
@@ -41,15 +69,43 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      db:
+        condition: service_healthy
+      reports_api:
+        condition: service_healthy
     volumes:
       - ./tests:/app/tests
       - ./report:/app/report       # persist your HTML report outside the container
       - ./src/config:/app/config   # if you have any config files needed for tests
     environment:
-      BASE_URL: http://app
+      BASE_URL: http://app/
+      FASTAPI_URL: http://reports_api:8000
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: clockwise
+      DB_USERNAME: root
+      DB_PASSWORD: rootpass
+    # FIXED — adds retry limit so it doesn't loop forever
     command: [
       "sh", "-c",
-      "until curl -sf http://app/login.php; do echo 'Waiting for app...'; sleep 3; done && pip install 'pytest-html==3.2.0' -q --break-system-packages && pytest tests/playwright -v --html=report/report.html --self-contained-html"
+      "
+      echo 'Waiting for app...' &&
+      for i in $(seq 1 20); do
+        curl -sf http://app/login.php && break;
+        echo 'app not ready, retrying...';
+        sleep 5;
+      done &&
+
+      echo 'Waiting for reports_api...' &&
+      for i in $(seq 1 20); do
+        curl -sf http://reports_api:8000/health && break;
+        echo 'reports_api not ready, retrying...';
+        sleep 5;
+      done &&
+
+      echo 'All services ready. Running tests...' &&
+      pytest tests/ -v --alluredir=report/allure-results
+      "
     ]
 
 volumes:

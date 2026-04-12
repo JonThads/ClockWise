@@ -1,4 +1,5 @@
 import re
+import allure
 import pytest
 from datetime import date, timedelta
 from playwright.sync_api import expect
@@ -9,7 +10,7 @@ from pathlib import Path
 # Helper Functions
 # -----------------------------
 def login(page, base_url, username, password):
-    page.goto(f"{base_url}/login.php", wait_until="domcontentloaded")
+    page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
     page.get_by_role("textbox", name="Username").fill(username)
     page.get_by_role("textbox", name="Password").fill(password)
     page.get_by_role("button", name="Log In").click()
@@ -90,6 +91,16 @@ def cleanup_leave(page, base_url, credentials, test_leave_date, request):
 # -----------------------------
 # File VL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Vacation Leave (VL)")
+@allure.description("Verifies that a Supervisory employee can submit a VL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "VL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_vl_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("VL")
 
@@ -109,7 +120,7 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Vacation Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/vl_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/vl_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -124,7 +135,7 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Vacation Leave (VL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/vl_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/vl_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -132,6 +143,16 @@ def test_file_vl_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File SL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Sick Leave (SL)")
+@allure.description("Verifies that a Supervisory employee can submit a SL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.CRITICAL)
+@allure.tag("leave", "SL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_sl_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("SL")
 
@@ -151,7 +172,7 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Sick Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/sl_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/sl_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -166,7 +187,7 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Sick Leave (SL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/sl_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/sl_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -174,6 +195,16 @@ def test_file_sl_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File EL
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Emergency Leave (EL)")
+@allure.description("Verifies that a Supervisory employee can submit a EL request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "EL", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_el_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("EL")
 
@@ -193,7 +224,7 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Emergency Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/el_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/el_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -208,7 +239,7 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Emergency Leave (EL)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/el_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/el_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -216,6 +247,16 @@ def test_file_el_submission_success(page, base_url, credentials, test_leave_date
 # -----------------------------
 # File NOPAY
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Leave Without Pay (NoPay)")
+@allure.description("Verifies that a Supervisory employee can submit a Leave Without Pay (NoPay) request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "NoPay", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("NOPAY")
 
@@ -235,7 +276,7 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Leave Without Pay submitted")
-    page.screenshot(path=f"report/playwright_screenshots/nopay_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/nopay_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -250,7 +291,7 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Leave Without Pay (NoPay)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/nopay_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/nopay_submission_check_{test_leave_date}.png")
 
     logout(page)
 
@@ -258,6 +299,16 @@ def test_file_NOPAY_submission_success(page, base_url, credentials, test_leave_d
 # -----------------------------
 # File Study Leave (EDU)
 # -----------------------------
+
+@allure.epic("ClockWise DTR & Leave Management System")
+@allure.feature("Leave Management")
+@allure.story("Employee can file a leave request")
+@allure.title("Supervisory employee can file Study Leave (EDU)")
+@allure.description("Verifies that a Supervisory employee can submit a Study Leave (EDU) request and that it appears as pending in the assigned approver's approval queue.")
+@allure.severity(allure.severity_level.NORMAL)
+@allure.tag("leave", "EDU", "supervisory", "regression")
+
+@pytest.mark.e2e
 def test_file_EDU_submission_success(page, base_url, credentials, test_leave_date, cleanup_leave):
     cleanup_leave("EDU")
 
@@ -277,7 +328,7 @@ def test_file_EDU_submission_success(page, base_url, credentials, test_leave_dat
     page.get_by_role("button", name="Submit Leave").click()
 
     expect(page.get_by_role("status")).to_contain_text("Study Leave submitted")
-    page.screenshot(path=f"report/playwright_screenshots/edu_submitted_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/edu_submitted_{test_leave_date}.png")
 
     logout(page)
 
@@ -292,6 +343,6 @@ def test_file_EDU_submission_success(page, base_url, credentials, test_leave_dat
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Khilua Asagi")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Study Leave (EDU)")
     expect(page.get_by_label("Leave Requests").locator("tbody")).to_contain_text("Pending")
-    page.screenshot(path=f"report/playwright_screenshots/edu_submission_check_{test_leave_date}.png")
+    page.screenshot(path=f"report/playwright_screenshots/leave_submission/user/edu_submission_check_{test_leave_date}.png")
 
     logout(page)

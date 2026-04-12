@@ -1,11 +1,12 @@
+#docker/Dockerfile.test
 FROM mcr.microsoft.com/playwright/python:v1.44.0-jammy
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
-# No need to run playwright install — the base image handles it
 
 COPY . .
 
-CMD ["pytest", "tests/playwright", "-v", "--html=report.html", "--self-contained-html"]
+# Default to running all tests with allure reporting
+CMD ["pytest", "tests/", "-v", "--alluredir=report/allure-results"]

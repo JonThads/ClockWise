@@ -1,3 +1,37 @@
+## v1.2.7 - 2026-04-03
+
+### Added
+- [Tests] Unit and Integration Tests for ClockWise FastAPI Reports
+- [Tests] Unit and Integration Report HTML Files
+- [Tests] Added Allure Reports
+- [Tests] Added Epic, Features, Stories, Titles, Severities, and Tags for Allure Reports
+- [pip] Added pydantic, fastapi, allure-reports
+- [Docker] Added cURL for reports_api health check
+- pytest.ini for strict markers
+- Folder Organization Restructuring to differentiate Unit, Integration, and E2E Tests
+
+## v1.2.6 - 2026-03-22
+
+### Fixed
+- BDay leave not appearing in dropdown
+- NoPay balance indicator missing in dropdown
+- NoPay accepts submission even with zero remaining balance
+
+### Added
+- docker-compose.yml for FastAPI Reports
+- Dockerfile.reports
+- Modified Base URL to be "app/"
+
+## v1.2.5 - 2026-03-21
+
+### Added
+- DTR and Leave Submission FastAPI Reports v1.0.0
+
+## v1.2.4 - 2026-03-21
+
+### Added
+- Added No Leave Balance and Executive User Leave Submission Tests
+
 ## v1.2.3 - 2026-03-14
 
 ### Added
