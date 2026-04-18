@@ -1,17 +1,22 @@
 # ─────────────────────────────────────────────────────────────
-# ci-qa.yml
-# Triggers: PR opened/updated targeting qa branch
-#           (i.e. when feature/dockerize-app → qa PR is created)
-# Purpose:  Full test pyramid (unit + integration + E2E)
-#           with Allure results uploaded as a downloadable artifact.
+# ci-main.yml
+# Triggers: PR opened/updated targeting main branch
+#           (i.e. when qa → main PR is created)
+# Purpose:  Final production gate — full test pyramid
+#           + Allure report published live to GitHub Pages.
+#
+# Prerequisites:
+#   1. After first successful run, go to repo Settings → Pages
+#      → Source: Deploy from branch → gh-pages → /(root) → Save
+#   2. GITHUB_TOKEN is available automatically — no setup needed.
 # ─────────────────────────────────────────────────────────────
 
-name: "[QA] Full Test Suite + Allure Artifact"
+name: "[Main] Production Gate + Allure Pages Deploy"
 
 on:
   pull_request:
     branches:
-      - qa
+      - main
 
 jobs:
   # ── JOB 1: Unit Tests ──────────────────────────────────────
@@ -59,7 +64,7 @@ jobs:
       - name: Copy environment file
         run: |
           cp .env.example .env
-          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
 
       - name: Start DB and Reports API
         run: |
@@ -115,7 +120,7 @@ jobs:
       - name: Copy environment file
         run: |
           cp .env.example .env
-          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+          sed -i 's/APP_ENV=.*/APP_ENV=production/' .env
 
       - name: Build and start full stack
         run: |
@@ -183,14 +188,21 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # ── JOB 4: Generate Allure Report + Upload as Artifact ─────
-  allure-artifact:
-    name: Bundle Allure Report Artifact
+  # ── JOB 4: Publish Allure Report to GitHub Pages ───────────
+  allure-pages-deploy:
+    name: Publish Allure Report → GitHub Pages
     runs-on: ubuntu-latest
     needs: [unit-tests, integration-tests, e2e-tests]
     if: always()
 
     steps:
+      - name: Checkout gh-pages branch (for history)
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+        continue-on-error: true  # branch won't exist on first run
+
       - name: Download all Allure results
         uses: actions/download-artifact@v4
         with:
@@ -201,12 +213,21 @@ jobs:
       - name: Install Allure CLI via npm
         run: npm install -g allure-commandline --save-dev
 
+      - name: Copy previous Allure history (for trend graphs)
+        run: |
+          if [ -d "gh-pages/history" ]; then
+            cp -r gh-pages/history allure-results/history
+            echo "Previous history copied."
+          else
+            echo "No previous history found — first run."
+          fi
+
       - name: Generate Allure HTML Report
         run: allure generate allure-results --clean -o allure-report
 
-      - name: Upload full Allure HTML report
-        uses: actions/upload-artifact@v4
+      - name: Deploy Allure Report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          name: allure-html-report-qa
-          path: allure-report
-          retention-days: 14
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-report
