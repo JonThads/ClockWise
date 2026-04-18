@@ -56,6 +56,15 @@ jobs:
         run: |
           docker compose up -d db reports_api
 
+      - name: Show DB container logs (debug)
+        if: always()
+        run: |
+          echo "=== Docker container status ==="
+          docker compose ps -a
+          echo ""
+          echo "=== DB container logs ==="
+          docker compose logs db
+
       - name: Wait for services to be healthy
         run: |
           timeout 120 bash -c \
