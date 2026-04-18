@@ -1,3 +1,11 @@
+## v1.2.8 - 2026-04-18
+
+### Added
+- [CI/CD] Configured GitHub Actions workflows to automate:
+    - Continuous Integration (Build and Test on pull requests)
+    - Continuous Deployment (automated Release/Deployment Pipelines)
+    - Repository event automation (e.g., PR Checks, Scheduled Jobs)
+
 ## v1.2.7 - 2026-04-03
 
 ### Added
