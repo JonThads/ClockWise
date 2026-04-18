@@ -68,11 +68,11 @@ jobs:
 
       - name: Start DB and Reports API
         run: |
-          docker compose up -d db reports
+          docker compose up -d db reports_api
 
       - name: Wait for services to be healthy
         run: |
-          timeout 90 bash -c \
+          timeout 120 bash -c \
             'until docker compose ps | grep -E "healthy"; do
               echo "Waiting for services..."; sleep 5;
             done'
@@ -122,12 +122,12 @@ jobs:
 
       - name: Build and start full stack
         run: |
-          docker compose up -d --build
+          docker compose up -d db reports_api app
 
       - name: Wait for full stack to be ready
         run: |
-          timeout 120 bash -c \
-            'until [ "$(docker compose ps --status running | grep -c "running")" -ge 3 ]; do
+          timeout 180 bash -c \
+            'until docker compose ps | grep -E "healthy"; do
               echo "Waiting for full stack..."; sleep 5;
             done'
           sleep 10
