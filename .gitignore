@@ -1,5 +1,4 @@
-#Ignore all SQL and TXT files
-*.sql
+#Ignore all File Extensions
 *.env
 *.png
 *.pyc
