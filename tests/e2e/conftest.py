@@ -24,6 +24,9 @@ def page(browser):
 
 @pytest.fixture(scope="session")
 def base_url():
+    # -----------------------------
+    # Use Port 8080 for Docker
+    # -----------------------------
     return os.getenv("BASE_URL", "http://localhost/ClockWise_Local_Testing/src/")
 
 # -----------------------------
