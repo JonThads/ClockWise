@@ -1,3 +1,8 @@
+## v1.2.9 - 2026-05-03
+
+### Added
+- [Tests] Added Accessibility Testing using axe-core
+
 ## v1.2.8 - 2026-04-18
 
 ### Added

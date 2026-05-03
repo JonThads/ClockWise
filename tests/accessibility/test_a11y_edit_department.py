@@ -15,14 +15,11 @@ from tests.accessibility.helpers import run_axe_scan, login_as_admin
 @allure.severity(allure.severity_level.NORMAL)
 @allure.tag("a11y", "wcag", "edit-department", "form")
 @pytest.mark.a11y
-def test_edit_department_prepopulated(page, base_url, credentials):
-    login_as_admin(page, base_url, credentials)
-    page.goto(
-        f"{base_url}edit-department.php?id=1",
-        wait_until="domcontentloaded"
-    )
-    page.wait_for_timeout(500)
-    run_axe_scan(page, "Edit Department — Pre-populated Form (dept_id=1)")
+async def test_edit_department_prepopulated(page, base_url, credentials):
+    await login_as_admin(page, base_url, credentials)
+    await page.goto(f"{base_url}edit-department.php?id=1", wait_until="domcontentloaded")
+    await page.wait_for_timeout(500)
+    await run_axe_scan(page, "Edit Department — Pre-populated Form (dept_id=1)")
 
 
 @allure.epic("ClockWise DTR & Leave Management System")
@@ -37,13 +34,10 @@ def test_edit_department_prepopulated(page, base_url, credentials):
 @allure.severity(allure.severity_level.NORMAL)
 @allure.tag("a11y", "wcag", "edit-department", "form", "error-state")
 @pytest.mark.a11y
-def test_edit_department_validation_error(page, base_url, credentials):
-    login_as_admin(page, base_url, credentials)
-    page.goto(
-        f"{base_url}edit-department.php?id=1",
-        wait_until="domcontentloaded"
-    )
-    page.fill("#dept_name", "")
-    page.get_by_role("button", name="Update Department").click()
-    page.wait_for_timeout(500)
-    run_axe_scan(page, "Edit Department — Validation Error State")
+async def test_edit_department_validation_error(page, base_url, credentials):
+    await login_as_admin(page, base_url, credentials)
+    await page.goto(f"{base_url}edit-department.php?id=1", wait_until="domcontentloaded")
+    await page.fill("#dept_name", "")
+    await page.get_by_role("button", name="Update Department").click()
+    await page.wait_for_timeout(500)
+    await run_axe_scan(page, "Edit Department — Validation Error State")

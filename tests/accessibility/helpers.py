@@ -2,7 +2,7 @@
 import json
 import allure
 import re
-from axe_playwright_python.sync_playwright import Axe
+from axe_playwright_python.async_playwright import Axe
 
 axe = Axe()
 
@@ -68,7 +68,7 @@ def _format_incomplete(incomplete):
     return lines
 
 
-def run_axe_scan(page, page_label, fail_on_impact=("critical", "serious")):
+async def run_axe_scan(page, page_label, fail_on_impact=("critical", "serious")):
     """
     Injects axe-core into the current page and runs a WCAG scan.
 
@@ -81,25 +81,25 @@ def run_axe_scan(page, page_label, fail_on_impact=("critical", "serious")):
 
     Raises AssertionError if violations at or above fail_on_impact exist.
     """
-    results = axe.run(page)
+    results = await axe.run(page)
     response = results.response
 
     # ── Extract all four result categories ────────────────────────────────────
-    all_violations  = response.get("violations",   [])
-    all_passes      = response.get("passes",       [])
-    all_incomplete  = response.get("incomplete",   [])
-    all_inapplicable= response.get("inapplicable", [])
+    all_violations   = response.get("violations",   [])
+    all_passes       = response.get("passes",       [])
+    all_incomplete   = response.get("incomplete",   [])
+    all_inapplicable = response.get("inapplicable", [])
 
     # Filter everything to WCAG rules only
-    wcag_violations  = [
+    wcag_violations = [
         v for v in all_violations
         if any(tag in v["tags"] for tag in WCAG_TAGS)
     ]
-    wcag_passes      = [
+    wcag_passes = [
         p for p in all_passes
         if any(tag in p["tags"] for tag in WCAG_TAGS)
     ]
-    wcag_incomplete  = [
+    wcag_incomplete = [
         i for i in all_incomplete
         if any(tag in i["tags"] for tag in WCAG_TAGS)
     ]
@@ -234,33 +234,34 @@ def run_axe_scan(page, page_label, fail_on_impact=("critical", "serious")):
         ])
     )
 
-def login_as_admin(page, base_url, credentials):
+
+async def login_as_admin(page, base_url, credentials):
     """
     Logs in as admin using credentials.json.
     Matches the exact E2E login pattern using get_by_role.
     """
     admin = credentials["admin"]
-    page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
-    page.get_by_role("textbox", name="Username").fill(admin["username"])
-    page.get_by_role("textbox", name="Password").fill(admin["password"])
-    page.get_by_role("button", name="Log In").click()
-    page.wait_for_url(
+    await page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
+    await page.get_by_role("textbox", name="Username").fill(admin["username"])
+    await page.get_by_role("textbox", name="Password").fill(admin["password"])
+    await page.get_by_role("button", name="Log In").click()
+    await page.wait_for_url(
         re.compile(r"admin-dashboard\.php"),
         wait_until="domcontentloaded"
     )
 
 
-def login_as_user(page, base_url, credentials_key, credentials):
+async def login_as_user(page, base_url, credentials_key, credentials):
     """
     Logs in as a named user from credentials.json.
     Matches the exact E2E login pattern using get_by_role.
     """
     user = credentials[credentials_key]
-    page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
-    page.get_by_role("textbox", name="Username").fill(user["username"])
-    page.get_by_role("textbox", name="Password").fill(user["password"])
-    page.get_by_role("button", name="Log In").click()
-    page.wait_for_url(
+    await page.goto(f"{base_url}login.php", wait_until="domcontentloaded")
+    await page.get_by_role("textbox", name="Username").fill(user["username"])
+    await page.get_by_role("textbox", name="Password").fill(user["password"])
+    await page.get_by_role("button", name="Log In").click()
+    await page.wait_for_url(
         re.compile(r"user-dashboard\.php"),
         wait_until="domcontentloaded"
     )

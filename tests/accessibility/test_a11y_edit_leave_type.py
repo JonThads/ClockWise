@@ -16,14 +16,11 @@ from tests.accessibility.helpers import run_axe_scan, login_as_admin
 @allure.severity(allure.severity_level.NORMAL)
 @allure.tag("a11y", "wcag", "edit-leave-type", "form")
 @pytest.mark.a11y
-def test_edit_leave_type_prepopulated(page, base_url, credentials):
-    login_as_admin(page, base_url, credentials)
-    page.goto(
-        f"{base_url}edit-leave-type.php?id=1",
-        wait_until="domcontentloaded"
-    )
-    page.wait_for_timeout(500)
-    run_axe_scan(page, "Edit Leave Type — Pre-populated Form (VL)")
+async def test_edit_leave_type_prepopulated(page, base_url, credentials):
+    await login_as_admin(page, base_url, credentials)
+    await page.goto(f"{base_url}edit-leave-type.php?id=1", wait_until="domcontentloaded")
+    await page.wait_for_timeout(500)
+    await run_axe_scan(page, "Edit Leave Type — Pre-populated Form (VL)")
 
 
 @allure.epic("ClockWise DTR & Leave Management System")
@@ -38,14 +35,11 @@ def test_edit_leave_type_prepopulated(page, base_url, credentials):
 @allure.severity(allure.severity_level.NORMAL)
 @allure.tag("a11y", "wcag", "edit-leave-type", "form", "error-state")
 @pytest.mark.a11y
-def test_edit_leave_type_validation_error(page, base_url, credentials):
-    login_as_admin(page, base_url, credentials)
-    page.goto(
-        f"{base_url}edit-leave-type.php?id=1",
-        wait_until="domcontentloaded"
-    )
-    page.fill("#leave_type_name", "")
-    page.fill("#leave_type_code", "")
-    page.get_by_role("button", name="Update Leave Type").click()
-    page.wait_for_timeout(500)
-    run_axe_scan(page, "Edit Leave Type — Validation Error State")
+async def test_edit_leave_type_validation_error(page, base_url, credentials):
+    await login_as_admin(page, base_url, credentials)
+    await page.goto(f"{base_url}edit-leave-type.php?id=1", wait_until="domcontentloaded")
+    await page.fill("#leave_type_name", "")
+    await page.fill("#leave_type_code", "")
+    await page.get_by_role("button", name="Update Leave Type").click()
+    await page.wait_for_timeout(500)
+    await run_axe_scan(page, "Edit Leave Type — Validation Error State")
