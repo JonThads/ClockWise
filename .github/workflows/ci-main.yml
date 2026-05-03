@@ -193,11 +193,98 @@ jobs:
         if: always()
         run: docker compose down -v
 
-  # ── JOB 4: Publish Allure Report to GitHub Pages ───────────
-  allure-pages-deploy:
-    name: Publish Allure Report → GitHub Pages
+  # ── JOB 4: a11y Accessibility Tests ─────────────────────────────
+  accessibility-tests:
+    name: a11y Accessibility Tests (axe-core WCAG 2.1 AA)
     runs-on: ubuntu-latest
-    needs: [unit-tests, integration-tests, e2e-tests]
+    needs: integration-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create credentials file
+        run: |
+          mkdir -p src/config
+          echo '${{ secrets.TEST_CREDENTIALS }}' > src/config/credentials.json
+
+      - name: Copy environment file
+        run: |
+          cp .env.example .env
+          sed -i 's/APP_ENV=.*/APP_ENV=testing/' .env
+
+      - name: Build and start full stack
+        run: |
+          docker compose up -d db reports_api app
+
+      - name: Wait for full stack to be ready
+        run: |
+          timeout 180 bash -c \
+            'until docker compose ps | grep -E "healthy"; do
+              echo "Waiting for full stack..."; sleep 5;
+            done'
+          sleep 10
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest playwright allure-pytest pytest-asyncio \
+            axe-playwright-python
+
+      - name: Install Playwright system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2t64 \
+            libatk-bridge2.0-0 \
+            libatk1.0-0 \
+            libcups2 \
+            libdbus-1-3 \
+            libdrm2 \
+            libgbm1 \
+            libgtk-3-0 \
+            libnspr4 \
+            libnss3 \
+            libxcomposite1 \
+            libxdamage1 \
+            libxfixes3 \
+            libxkbcommon0 \
+            libxrandr2 \
+            xvfb
+
+      - name: Install Playwright browsers
+        run: playwright install chromium
+
+      - name: Run accessibility tests
+        env:
+          BASE_URL: http://localhost:8080/
+          DB_HOST: localhost
+        run: |
+          pytest tests/accessibility/ -m a11y -v \
+            --alluredir=allure-results/accessibility
+
+      - name: Upload Allure results (accessibility)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-accessibility
+          path: allure-results/accessibility
+
+      - name: Tear down full stack
+        if: always()
+        run: docker compose down -v
+
+  # ── JOB 5: Generate Allure Report + Upload as Artifact ─────
+  allure-artifact:
+    name: Bundle Allure Report Artifact
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, accessibility-tests]
     if: always()
 
     steps:
