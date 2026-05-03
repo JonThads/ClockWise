@@ -50,7 +50,7 @@ def navigate_to_date_on_calendar(page, base_url, target_date: date):
     (e.g. "Monday, March 23, 2026, VL pending. Press Enter to submit DTR or leave.")
     so a partial match on the date portion always works regardless of record state.
     """
-    url = f"{base_url}/user-dashboard.php?month={target_date.month}&year={target_date.year}"
+    url = f"{base_url}user-dashboard.php?month={target_date.month}&year={target_date.year}"
     page.goto(url, wait_until="domcontentloaded")
     page.wait_for_selector("[role='grid']", state="visible")
     page.get_by_role("gridcell", name=build_date_label(target_date), exact=False).click()
