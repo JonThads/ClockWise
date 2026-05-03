@@ -3,7 +3,6 @@ from playwright.sync_api import sync_playwright
 import os
 import json
 from pathlib import Path
-from pathlib import Path
 
 # -----------------------------
 # Browser & Page Fixtures
@@ -26,6 +25,9 @@ def page(browser):
 
 @pytest.fixture(scope="session")
 def base_url():
+    # -----------------------------
+    # Use Port 8080 for Docker
+    # -----------------------------
     return os.getenv("BASE_URL", "http://localhost:8080")
 
 # -----------------------------

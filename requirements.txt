@@ -12,6 +12,10 @@ fastapi==0.115.0
 # ── Unit Testing ──────────────────────────────
 pydantic==2.8.0
 
+# ── Accessibility Testing ─────────────────────
+axe-playwright-python
+pytest-asyncio
+
 # ── Reporting ─────────────────────────────────
 pytest-html==4.1.1
 allure-pytest
