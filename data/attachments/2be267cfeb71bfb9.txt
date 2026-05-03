@@ -1,0 +1,18 @@
+
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Edit Leave Type — Pre-populated Form (VL)
+  URL:               http://localhost:8080/edit-leave-type.php?id=1
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   19
+  ⚪ Manual Review:  0
+  ➖ Not Applicable: 59
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 19
+  Result: ✅ PASS
+============================================================
+
+✅ 19 WCAG rules passed — see Allure '✅ WCAG Rules Passed' attachment for details.

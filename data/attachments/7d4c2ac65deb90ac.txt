@@ -1,0 +1,20 @@
+
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Edit Department — Validation Error State
+  URL:               http://localhost:8080/edit-department.php?id=1
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   22
+  ⚪ Manual Review:  1
+  ➖ Not Applicable: 55
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 23
+  Result: ✅ PASS
+============================================================
+
+✅ 22 WCAG rules passed — see Allure '✅ WCAG Rules Passed' attachment for details.
+
+⚪ 1 rules need manual review — see Allure '⚪ Needs Manual Review' attachment.

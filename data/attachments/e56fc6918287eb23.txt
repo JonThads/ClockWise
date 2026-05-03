@@ -1,0 +1,18 @@
+
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Add Employee — Validation Error State
+  URL:               http://localhost:8080/add-employee.php
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   24
+  ⚪ Manual Review:  0
+  ➖ Not Applicable: 53
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 24
+  Result: ✅ PASS
+============================================================
+
+✅ 24 WCAG rules passed — see Allure '✅ WCAG Rules Passed' attachment for details.

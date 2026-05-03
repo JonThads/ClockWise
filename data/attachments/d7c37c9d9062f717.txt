@@ -1,0 +1,20 @@
+
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Add Shift — Default State
+  URL:               http://localhost:8080/add-shift.php
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   19
+  ⚪ Manual Review:  1
+  ➖ Not Applicable: 59
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 20
+  Result: ✅ PASS
+============================================================
+
+✅ 19 WCAG rules passed — see Allure '✅ WCAG Rules Passed' attachment for details.
+
+⚪ 1 rules need manual review — see Allure '⚪ Needs Manual Review' attachment.

@@ -1,0 +1,9 @@
+Page: Add Shift — Default State
+============================================================
+axe-core could not automatically verify these rules.
+They require manual testing with a screen reader or keyboard.
+
+⚪ NEEDS MANUAL REVIEW (1):
+  ───────────────────────────────────────────────────────
+  These rules could not be automatically verified and require manual testing.
+  ?  [wcag2aa, wcag143]  color-contrast  —  Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds

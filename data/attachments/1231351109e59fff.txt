@@ -1,0 +1,15 @@
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Admin Dashboard — DTR Requests
+  URL:               http://localhost:8080/admin-dashboard.php
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   23
+  ⚪ Manual Review:  1
+  ➖ Not Applicable: 50
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 24
+  Result: ✅ PASS
+============================================================

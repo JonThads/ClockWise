@@ -1,0 +1,15 @@
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Edit Employee — Pre-populated Form (emp_id=17)
+  URL:               http://localhost:8080/edit-employee.php?id=17
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   21
+  ⚪ Manual Review:  0
+  ➖ Not Applicable: 57
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 21
+  Result: ✅ PASS
+============================================================

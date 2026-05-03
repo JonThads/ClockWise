@@ -1,0 +1,28 @@
+Page: Edit Shift — Validation Error State
+============================================================
+The following WCAG 2.1 AA rules were checked and all elements passed:
+
+✓ RULES PASSED (22):
+  ───────────────────────────────────────────────────────
+  ✓  [wcag2a, wcag412]  aria-allowed-attr  —  Ensure an element's role supports its ARIA attributes
+  ✓  [wcag2a, wcag412]  aria-conditional-attr  —  Ensure ARIA attributes are used as described in the specification of the element's role
+  ✓  [wcag2a, wcag412]  aria-deprecated-role  —  Ensure elements do not use deprecated roles
+  ✓  [wcag2a, wcag131, wcag412]  aria-hidden-body  —  Ensure aria-hidden="true" is not present on the document body.
+  ✓  [wcag2a, wcag412]  aria-hidden-focus  —  Ensure aria-hidden elements are not focusable nor contain focusable elements
+  ✓  [wcag2a, wcag412]  aria-prohibited-attr  —  Ensure ARIA attributes are not prohibited for an element's role
+  ✓  [wcag2a, wcag412]  aria-required-attr  —  Ensure elements with ARIA roles have all required ARIA attributes
+  ✓  [wcag2a, wcag412]  aria-roles  —  Ensure all elements with a role attribute use a valid value
+  ✓  [wcag2a, wcag412]  aria-valid-attr-value  —  Ensure all ARIA attributes have valid values
+  ✓  [wcag2a, wcag412]  aria-valid-attr  —  Ensure attributes that begin with aria- are valid ARIA attributes
+  ✓  [wcag2a, wcag412]  button-name  —  Ensure buttons have discernible text
+  ✓  [wcag2a, wcag241]  bypass  —  Ensure each page has at least one mechanism for a user to bypass navigation and jump straight to the content
+  ✓  [wcag2aa, wcag143]  color-contrast  —  Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds
+  ✓  [wcag2a, wcag242]  document-title  —  Ensure each HTML document contains a non-empty <title> element
+  ✓  [wcag2a, wcag412]  duplicate-id-aria  —  Ensure every id attribute value used in ARIA and in labels is unique
+  ✓  [wcag2a, wcag332]  form-field-multiple-labels  —  Ensure form field does not have multiple label elements
+  ✓  [wcag2a, wcag311]  html-has-lang  —  Ensure every HTML document has a lang attribute
+  ✓  [wcag2a, wcag311]  html-lang-valid  —  Ensure the lang attribute of the <html> element has a valid value
+  ✓  [wcag2a, wcag412]  label  —  Ensure every form element has a label
+  ✓  [wcag2a, wcag244, wcag412]  link-name  —  Ensure links have discernible text
+  ✓  [wcag2aa, wcag144]  meta-viewport  —  Ensure <meta name="viewport"> does not disable text scaling and zooming
+  ✓  [wcag2a, wcag412]  nested-interactive  —  Ensure interactive controls are not nested as they are not always announced by screen readers or can cause focus problems for assistive technologies

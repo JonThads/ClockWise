@@ -1,0 +1,15 @@
+============================================================
+  WCAG 2.1 AA ACCESSIBILITY SCAN SCORECARD
+============================================================
+  Page:              Edit Shift — Pre-populated Form (shift_id=1)
+  URL:               http://localhost:8080/edit-shift-schedule.php?id=1
+  axe-core version:  4.11.0
+────────────────────────────────────────────────────────────
+  🔴 Violations:     0 (0 blocking, 0 warnings)
+  ✅ Passed Rules:   19
+  ⚪ Manual Review:  0
+  ➖ Not Applicable: 59
+────────────────────────────────────────────────────────────
+  Total Rules Checked: 19
+  Result: ✅ PASS
+============================================================
